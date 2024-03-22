@@ -73,6 +73,5 @@ func (h *socks5Handler) handleConnect(ctx context.Context, conn net.Conn, networ
 	log.WithFields(map[string]any{
 		"duration": time.Since(t),
 	}).Infof("%s >close-< %s ---- %s", conn.RemoteAddr(), address, clientID)
-
 	return nil
 }
