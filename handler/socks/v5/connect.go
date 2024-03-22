@@ -6,9 +6,9 @@ import (
 	"net"
 	"time"
 
+	"github.com/go-gost/gosocks5"
 	"github.com/liukeqqs/core/limiter/traffic"
 	"github.com/liukeqqs/core/logger"
-	"github.com/go-gost/gosocks5"
 	ctxvalue "github.com/liukeqqs/x/ctx"
 	netpkg "github.com/liukeqqs/x/internal/net"
 	"github.com/liukeqqs/x/limiter/traffic/wrapper"
@@ -68,11 +68,11 @@ func (h *socks5Handler) handleConnect(ctx context.Context, conn net.Conn, networ
 	}
 
 	t := time.Now()
-	log.Infof("%s <-> %s", conn.RemoteAddr(), address)
+	log.Infof("%s <ffffffffffffffff-> %s", conn.RemoteAddr(), address)
 	netpkg.Transport(rw, cc)
 	log.WithFields(map[string]any{
 		"duration": time.Since(t),
-	}).Infof("%s >-< %s", conn.RemoteAddr(), address)
+	}).Infof("%s >fffffffffffffff-< %s", conn.RemoteAddr(), address)
 
 	return nil
 }

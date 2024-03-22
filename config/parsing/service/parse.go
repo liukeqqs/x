@@ -50,7 +50,6 @@ func ParseService(cfg *config.ServiceConfig) (service.Service, error) {
 	}
 
 	serviceLogger := log.WithFields(map[string]any{
-		"sssss":    "service",
 		"kind":     "service",
 		"service":  cfg.Name,
 		"listener": cfg.Listener.Type,

@@ -2,12 +2,13 @@ package v5
 
 import (
 	"bytes"
+	"log"
 	"net"
 	"time"
 
+	"github.com/go-gost/gosocks5"
 	"github.com/liukeqqs/core/common/bufpool"
 	"github.com/liukeqqs/core/logger"
-	"github.com/go-gost/gosocks5"
 )
 
 type bindConn struct {
@@ -17,10 +18,12 @@ type bindConn struct {
 }
 
 func (c *bindConn) LocalAddr() net.Addr {
+	log.Print("[PPTVaa = LocalAddr1] %s", "bytes")
 	return c.localAddr
 }
 
 func (c *bindConn) RemoteAddr() net.Addr {
+	log.Print("[PPTVaa = RemoteAddr1] %s", "bytes")
 	return c.remoteAddr
 }
 
@@ -33,6 +36,7 @@ type udpRelayConn struct {
 }
 
 func (c *udpRelayConn) ReadFrom(b []byte) (n int, addr net.Addr, err error) {
+	log.Print("[PPTVaa = ReadFrom] %s", "bytes")
 	buf := bufpool.Get(c.bufferSize)
 	defer bufpool.Put(buf)
 
@@ -60,11 +64,13 @@ func (c *udpRelayConn) ReadFrom(b []byte) (n int, addr net.Addr, err error) {
 }
 
 func (c *udpRelayConn) Read(b []byte) (n int, err error) {
+	log.Print("[PPTVaa = Read] %s", "bytes")
 	n, _, err = c.ReadFrom(b)
 	return
 }
 
 func (c *udpRelayConn) WriteTo(b []byte, addr net.Addr) (n int, err error) {
+	log.Print("[PPTVaa = WriteTo] %s", "bytes")
 	socksAddr := gosocks5.Addr{}
 	if err = socksAddr.ParseFrom(addr.String()); err != nil {
 		return
@@ -96,18 +102,22 @@ func (c *udpRelayConn) WriteTo(b []byte, addr net.Addr) (n int, err error) {
 }
 
 func (c *udpRelayConn) Write(b []byte) (n int, err error) {
+	log.Print("[PPTVaa = Write] %s", "bytes")
 	return c.WriteTo(b, c.taddr)
 }
 
 func (c *udpRelayConn) RemoteAddr() net.Addr {
+	log.Print("[PPTVaa = RemoteAddr] %s", "bytes")
 	return c.taddr
 }
 
 func (c *udpRelayConn) LocalAddr() net.Addr {
+	log.Print("[PPTVaa = LocalAddr] %s", "bytes")
 	return c.udpConn.LocalAddr()
 }
 
 func (c *udpRelayConn) Close() error {
+	log.Print("[PPTVaa = Close] %s", "bytes")
 	c.udpConn.Close()
 	return c.tcpConn.Close()
 }
