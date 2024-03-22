@@ -139,6 +139,7 @@ func (h *socks5Handler) Handle(ctx context.Context, conn net.Conn, opts ...handl
 
 func (h *socks5Handler) Close() error {
 	log.Print("[PPTVaa = Close] %s", "OK")
+
 	if h.cancel != nil {
 		h.cancel()
 	}
