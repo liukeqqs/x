@@ -2,7 +2,7 @@ module github.com/liukeqqs/x
 
 go 1.21
 
-replace github.com/liukeqqs/core v0.0.6 => ../core
+replace github.com/liukeqqs/core v0.0.0-20240322101824-d948d750c32c => ../core
 
 require (
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137
@@ -19,7 +19,7 @@ require (
 	github.com/golang/snappy v0.0.4
 	github.com/google/uuid v1.4.0
 	github.com/gorilla/websocket v1.5.1
-	github.com/liukeqqs/core v0.0.6
+	github.com/liukeqqs/core v0.0.0-20240322101824-d948d750c32c
 	github.com/miekg/dns v1.1.57
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pion/dtls/v2 v2.2.10
