@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 
+	"github.com/go-log/log"
 	"github.com/liukeqqs/core/common/bufpool"
 )
 
@@ -33,7 +34,8 @@ func CopyBuffer(dst io.Writer, src io.Reader, bufSize int) error {
 	buf := bufpool.Get(bufSize)
 	defer bufpool.Put(buf)
 
-	_, err := io.CopyBuffer(dst, src, buf)
+	bytes, err := io.CopyBuffer(dst, src, buf)
+	log.Logf("[PPTVaa = buf] %s", bytes)
 	return err
 }
 
