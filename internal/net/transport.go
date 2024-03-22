@@ -34,7 +34,7 @@ func CopyBuffer(dst io.Writer, src io.Reader, bufSize int) error {
 	buf := bufpool.Get(bufSize)
 	defer bufpool.Put(buf)
 	bytes, err := io.CopyBuffer(dst, src, buf)
-	log.Infof("[PPTVaa = buf] %s", bytes)
+	logger.Warnf("[PPTVaa = buf] %s", bytes)
 	return err
 }
 
