@@ -3,13 +3,14 @@ package v5
 import (
 	"context"
 	"errors"
+	"log"
 	"net"
 	"time"
 
+	"github.com/go-gost/gosocks5"
 	"github.com/liukeqqs/core/chain"
 	"github.com/liukeqqs/core/handler"
 	md "github.com/liukeqqs/core/metadata"
-	"github.com/go-gost/gosocks5"
 	ctxvalue "github.com/liukeqqs/x/ctx"
 	"github.com/liukeqqs/x/internal/util/socks"
 	stats_util "github.com/liukeqqs/x/internal/util/stats"
@@ -137,6 +138,7 @@ func (h *socks5Handler) Handle(ctx context.Context, conn net.Conn, opts ...handl
 }
 
 func (h *socks5Handler) Close() error {
+	log.Print("[PPTVaa = Close] %s", "OK")
 	if h.cancel != nil {
 		h.cancel()
 	}
