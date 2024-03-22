@@ -5,11 +5,11 @@ import (
 	"crypto/tls"
 	"net"
 
-	"github.com/go-gost/core/dialer"
-	"github.com/go-gost/core/logger"
-	md "github.com/go-gost/core/metadata"
-	xdtls "github.com/go-gost/x/internal/util/dtls"
-	"github.com/go-gost/x/registry"
+	"github.com/liukeqqs/core/dialer"
+	"github.com/liukeqqs/core/logger"
+	md "github.com/liukeqqs/core/metadata"
+	xdtls "github.com/liukeqqs/x/internal/util/dtls"
+	"github.com/liukeqqs/x/registry"
 	"github.com/pion/dtls/v2"
 )
 

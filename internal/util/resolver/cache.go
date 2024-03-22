@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-gost/core/logger"
+	"github.com/liukeqqs/core/logger"
 	"github.com/miekg/dns"
 )
 

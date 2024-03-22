@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	xnet "github.com/go-gost/x/internal/net"
 	"github.com/gobwas/glob"
+	xnet "github.com/liukeqqs/x/internal/net"
 	"github.com/yl2chen/cidranger"
 )
 

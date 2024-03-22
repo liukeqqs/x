@@ -5,12 +5,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-gost/core/logger"
-	"github.com/go-gost/core/sd"
 	"github.com/go-gost/relay"
-	"github.com/go-gost/x/internal/util/mux"
-	"github.com/go-gost/x/selector"
 	"github.com/google/uuid"
+	"github.com/liukeqqs/core/logger"
+	"github.com/liukeqqs/core/sd"
+	"github.com/liukeqqs/x/internal/util/mux"
+	"github.com/liukeqqs/x/selector"
 )
 
 const (

@@ -12,7 +12,7 @@ import (
 	"net/url"
 	"sync"
 
-	"github.com/go-gost/core/logger"
+	"github.com/liukeqqs/core/logger"
 )
 
 type obfsHTTPConn struct {

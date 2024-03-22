@@ -6,14 +6,14 @@ import (
 	"encoding/json"
 	"io"
 
-	"github.com/go-gost/core/chain"
-	"github.com/go-gost/core/hop"
-	"github.com/go-gost/core/logger"
+	"github.com/liukeqqs/core/chain"
+	"github.com/liukeqqs/core/hop"
+	"github.com/liukeqqs/core/logger"
 	"github.com/go-gost/plugin/hop/proto"
-	"github.com/go-gost/x/config"
-	node_parser "github.com/go-gost/x/config/parsing/node"
-	ctxvalue "github.com/go-gost/x/ctx"
-	"github.com/go-gost/x/internal/plugin"
+	"github.com/liukeqqs/x/config"
+	node_parser "github.com/liukeqqs/x/config/parsing/node"
+	ctxvalue "github.com/liukeqqs/x/ctx"
+	"github.com/liukeqqs/x/internal/plugin"
 	"google.golang.org/grpc"
 )
 

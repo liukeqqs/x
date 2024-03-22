@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/go-gost/core/common/net/udp"
-	"github.com/go-gost/core/connector"
-	"github.com/go-gost/core/logger"
 	"github.com/go-gost/gosocks5"
-	"github.com/go-gost/x/internal/util/mux"
-	"github.com/go-gost/x/internal/util/socks"
+	"github.com/liukeqqs/core/common/net/udp"
+	"github.com/liukeqqs/core/connector"
+	"github.com/liukeqqs/core/logger"
+	"github.com/liukeqqs/x/internal/util/mux"
+	"github.com/liukeqqs/x/internal/util/socks"
 )
 
 // Bind implements connector.Binder.

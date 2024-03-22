@@ -6,11 +6,11 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/go-gost/core/dialer"
-	md "github.com/go-gost/core/metadata"
-	ws_util "github.com/go-gost/x/internal/util/ws"
-	"github.com/go-gost/x/registry"
+	"github.com/liukeqqs/core/dialer"
+	md "github.com/liukeqqs/core/metadata"
 	"github.com/gorilla/websocket"
+	ws_util "github.com/liukeqqs/x/internal/util/ws"
+	"github.com/liukeqqs/x/registry"
 )
 
 func init() {

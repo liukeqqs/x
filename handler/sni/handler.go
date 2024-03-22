@@ -15,16 +15,16 @@ import (
 	"net/http/httputil"
 	"time"
 
-	"github.com/go-gost/core/bypass"
-	"github.com/go-gost/core/chain"
-	"github.com/go-gost/core/handler"
-	"github.com/go-gost/core/logger"
-	md "github.com/go-gost/core/metadata"
 	dissector "github.com/go-gost/tls-dissector"
-	ctxvalue "github.com/go-gost/x/ctx"
-	xio "github.com/go-gost/x/internal/io"
-	netpkg "github.com/go-gost/x/internal/net"
-	"github.com/go-gost/x/registry"
+	"github.com/liukeqqs/core/bypass"
+	"github.com/liukeqqs/core/chain"
+	"github.com/liukeqqs/core/handler"
+	"github.com/liukeqqs/core/logger"
+	md "github.com/liukeqqs/core/metadata"
+	ctxvalue "github.com/liukeqqs/x/ctx"
+	xio "github.com/liukeqqs/x/internal/io"
+	netpkg "github.com/liukeqqs/x/internal/net"
+	"github.com/liukeqqs/x/registry"
 )
 
 func init() {

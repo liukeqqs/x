@@ -9,10 +9,10 @@ import (
 	"syscall"
 	"time"
 
-	limiter "github.com/go-gost/core/limiter/traffic"
-	"github.com/go-gost/core/metadata"
-	xnet "github.com/go-gost/x/internal/net"
-	"github.com/go-gost/x/internal/net/udp"
+	limiter "github.com/liukeqqs/core/limiter/traffic"
+	"github.com/liukeqqs/core/metadata"
+	xnet "github.com/liukeqqs/x/internal/net"
+	"github.com/liukeqqs/x/internal/net/udp"
 	"github.com/patrickmn/go-cache"
 )
 

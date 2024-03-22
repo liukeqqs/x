@@ -6,9 +6,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/go-gost/core/admission"
-	"github.com/go-gost/core/logger"
-	"github.com/go-gost/x/internal/plugin"
+	"github.com/liukeqqs/core/admission"
+	"github.com/liukeqqs/core/logger"
+	"github.com/liukeqqs/x/internal/plugin"
 )
 
 type httpPluginRequest struct {

@@ -3,9 +3,9 @@ package ssh
 import (
 	"os"
 
-	mdata "github.com/go-gost/core/metadata"
-	mdutil "github.com/go-gost/core/metadata/util"
-	ssh_util "github.com/go-gost/x/internal/util/ssh"
+	mdata "github.com/liukeqqs/core/metadata"
+	mdutil "github.com/liukeqqs/core/metadata/util"
+	ssh_util "github.com/liukeqqs/x/internal/util/ssh"
 	"golang.org/x/crypto/ssh"
 )
 

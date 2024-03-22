@@ -3,7 +3,7 @@ package registry
 import (
 	"context"
 
-	"github.com/go-gost/core/admission"
+	"github.com/liukeqqs/core/admission"
 )
 
 type admissionRegistry struct {

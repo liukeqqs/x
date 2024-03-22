@@ -3,7 +3,7 @@ package registry
 import (
 	"context"
 
-	"github.com/go-gost/core/ingress"
+	"github.com/liukeqqs/core/ingress"
 )
 
 type ingressRegistry struct {

@@ -6,11 +6,11 @@ import (
 	"net"
 	"time"
 
-	"github.com/go-gost/core/connector"
-	md "github.com/go-gost/core/metadata"
+	"github.com/liukeqqs/core/connector"
+	md "github.com/liukeqqs/core/metadata"
 	"github.com/go-gost/relay"
-	ctxvalue "github.com/go-gost/x/ctx"
-	"github.com/go-gost/x/registry"
+	ctxvalue "github.com/liukeqqs/x/ctx"
+	"github.com/liukeqqs/x/registry"
 )
 
 func init() {

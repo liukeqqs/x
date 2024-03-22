@@ -4,7 +4,7 @@ import (
 	"context"
 	"net"
 
-	"github.com/go-gost/core/router"
+	"github.com/liukeqqs/core/router"
 )
 
 type routerRegistry struct {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/go-gost/core/recorder"
+	"github.com/liukeqqs/core/recorder"
 )
 
 type fileRecorderOptions struct {

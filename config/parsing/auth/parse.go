@@ -4,14 +4,14 @@ import (
 	"crypto/tls"
 	"net/url"
 
-	"github.com/go-gost/core/auth"
-	"github.com/go-gost/core/logger"
-	xauth "github.com/go-gost/x/auth"
-	auth_plugin "github.com/go-gost/x/auth/plugin"
-	"github.com/go-gost/x/config"
-	"github.com/go-gost/x/internal/loader"
-	"github.com/go-gost/x/internal/plugin"
-	"github.com/go-gost/x/registry"
+	"github.com/liukeqqs/core/auth"
+	"github.com/liukeqqs/core/logger"
+	xauth "github.com/liukeqqs/x/auth"
+	auth_plugin "github.com/liukeqqs/x/auth/plugin"
+	"github.com/liukeqqs/x/config"
+	"github.com/liukeqqs/x/internal/loader"
+	"github.com/liukeqqs/x/internal/plugin"
+	"github.com/liukeqqs/x/registry"
 )
 
 func ParseAuther(cfg *config.AutherConfig) auth.Authenticator {

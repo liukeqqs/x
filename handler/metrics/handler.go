@@ -7,10 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-gost/core/handler"
-	md "github.com/go-gost/core/metadata"
-	xmetrics "github.com/go-gost/x/metrics"
-	"github.com/go-gost/x/registry"
+	"github.com/liukeqqs/core/handler"
+	md "github.com/liukeqqs/core/metadata"
+	xmetrics "github.com/liukeqqs/x/metrics"
+	"github.com/liukeqqs/x/registry"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 

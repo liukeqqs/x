@@ -1,8 +1,8 @@
 package registry
 
 import (
-	"github.com/go-gost/core/dialer"
-	"github.com/go-gost/core/logger"
+	"github.com/liukeqqs/core/dialer"
+	"github.com/liukeqqs/core/logger"
 )
 
 type NewDialer func(opts ...dialer.Option) dialer.Dialer

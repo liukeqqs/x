@@ -1,13 +1,14 @@
-module github.com/go-gost/x
+module github.com/liukeqqs/x
 
 go 1.21
+
+replace github.com/liukeqqs/core v0.0.6 => ../core
 
 require (
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/gin-contrib/cors v1.5.0
 	github.com/gin-gonic/gin v1.9.1
-	github.com/go-gost/core v0.0.0-20240131151724-a06608ccafbf
 	github.com/go-gost/gosocks4 v0.0.1
 	github.com/go-gost/gosocks5 v0.4.0
 	github.com/go-gost/plugin v0.0.0-20240103125338-9c84e29cb81a
@@ -18,9 +19,10 @@ require (
 	github.com/golang/snappy v0.0.4
 	github.com/google/uuid v1.4.0
 	github.com/gorilla/websocket v1.5.1
+	github.com/liukeqqs/core v0.0.6
 	github.com/miekg/dns v1.1.57
 	github.com/patrickmn/go-cache v2.1.0+incompatible
-	github.com/pion/dtls/v2 v2.2.6
+	github.com/pion/dtls/v2 v2.2.10
 	github.com/pires/go-proxyproto v0.7.0
 	github.com/prometheus/client_golang v1.17.0
 	github.com/quic-go/quic-go v0.40.1
@@ -36,9 +38,9 @@ require (
 	github.com/xtaci/smux v1.5.24
 	github.com/xtaci/tcpraw v1.2.25
 	github.com/yl2chen/cidranger v1.0.2
-	golang.org/x/crypto v0.17.0
-	golang.org/x/net v0.19.0
-	golang.org/x/sys v0.15.0
+	golang.org/x/crypto v0.18.0
+	golang.org/x/net v0.20.0
+	golang.org/x/sys v0.16.0
 	golang.org/x/time v0.5.0
 	golang.zx2c4.com/wireguard v0.0.0-20220703234212-c31a7b1ab478
 	google.golang.org/grpc v1.59.0
@@ -81,8 +83,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.12.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.1 // indirect
 	github.com/pion/logging v0.2.2 // indirect
-	github.com/pion/transport/v2 v2.0.2 // indirect
-	github.com/pion/udp/v2 v2.0.1 // indirect
+	github.com/pion/transport/v2 v2.2.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_model v0.4.1-0.20230718164431-9a2bf3000d16 // indirect
 	github.com/prometheus/common v0.44.0 // indirect

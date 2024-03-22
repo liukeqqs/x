@@ -4,13 +4,13 @@ import (
 	"crypto/tls"
 	"strings"
 
-	"github.com/go-gost/core/ingress"
-	"github.com/go-gost/core/logger"
-	"github.com/go-gost/x/config"
-	xingress "github.com/go-gost/x/ingress"
-	ingress_plugin "github.com/go-gost/x/ingress/plugin"
-	"github.com/go-gost/x/internal/loader"
-	"github.com/go-gost/x/internal/plugin"
+	"github.com/liukeqqs/core/ingress"
+	"github.com/liukeqqs/core/logger"
+	"github.com/liukeqqs/x/config"
+	xingress "github.com/liukeqqs/x/ingress"
+	ingress_plugin "github.com/liukeqqs/x/ingress/plugin"
+	"github.com/liukeqqs/x/internal/loader"
+	"github.com/liukeqqs/x/internal/plugin"
 )
 
 func ParseIngress(cfg *config.IngressConfig) ingress.Ingress {

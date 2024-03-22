@@ -4,10 +4,10 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-gost/core/logger"
-	"github.com/go-gost/x/config"
-	parser "github.com/go-gost/x/config/parsing/hop"
-	"github.com/go-gost/x/registry"
+	"github.com/liukeqqs/core/logger"
+	"github.com/liukeqqs/x/config"
+	parser "github.com/liukeqqs/x/config/parsing/hop"
+	"github.com/liukeqqs/x/registry"
 )
 
 // swagger:parameters createHopRequest

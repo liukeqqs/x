@@ -4,11 +4,11 @@ import (
 	"context"
 	"net"
 
-	"github.com/go-gost/core/dialer"
-	"github.com/go-gost/core/logger"
-	md "github.com/go-gost/core/metadata"
-	serial "github.com/go-gost/x/internal/util/serial"
-	"github.com/go-gost/x/registry"
+	"github.com/liukeqqs/core/dialer"
+	"github.com/liukeqqs/core/logger"
+	md "github.com/liukeqqs/core/metadata"
+	serial "github.com/liukeqqs/x/internal/util/serial"
+	"github.com/liukeqqs/x/registry"
 )
 
 func init() {

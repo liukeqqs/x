@@ -6,15 +6,15 @@ import (
 	"net"
 	"time"
 
-	"github.com/go-gost/core/handler"
-	"github.com/go-gost/core/listener"
-	"github.com/go-gost/core/logger"
+	"github.com/liukeqqs/core/handler"
+	"github.com/liukeqqs/core/listener"
+	"github.com/liukeqqs/core/logger"
 	"github.com/go-gost/relay"
-	"github.com/go-gost/x/internal/net/udp"
-	"github.com/go-gost/x/internal/util/mux"
-	relay_util "github.com/go-gost/x/internal/util/relay"
-	metrics "github.com/go-gost/x/metrics/wrapper"
-	xservice "github.com/go-gost/x/service"
+	"github.com/liukeqqs/x/internal/net/udp"
+	"github.com/liukeqqs/x/internal/util/mux"
+	relay_util "github.com/liukeqqs/x/internal/util/relay"
+	metrics "github.com/liukeqqs/x/metrics/wrapper"
+	xservice "github.com/liukeqqs/x/service"
 )
 
 func (h *relayHandler) handleBind(ctx context.Context, conn net.Conn, network, address string, log logger.Logger) error {

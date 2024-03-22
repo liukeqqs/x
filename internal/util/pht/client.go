@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/go-gost/core/logger"
+	"github.com/liukeqqs/core/logger"
 )
 
 type Client struct {

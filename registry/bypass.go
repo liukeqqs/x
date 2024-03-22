@@ -3,7 +3,7 @@ package registry
 import (
 	"context"
 
-	"github.com/go-gost/core/bypass"
+	"github.com/liukeqqs/core/bypass"
 )
 
 type bypassRegistry struct {

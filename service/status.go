@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-gost/x/stats"
+	"github.com/liukeqqs/x/stats"
 )
 
 const (

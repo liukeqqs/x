@@ -5,12 +5,12 @@ import (
 	"net"
 	"time"
 
-	"github.com/go-gost/core/chain"
-	"github.com/go-gost/core/connector"
-	"github.com/go-gost/core/logger"
-	"github.com/go-gost/core/metrics"
-	"github.com/go-gost/core/selector"
-	xmetrics "github.com/go-gost/x/metrics"
+	"github.com/liukeqqs/core/chain"
+	"github.com/liukeqqs/core/connector"
+	"github.com/liukeqqs/core/logger"
+	"github.com/liukeqqs/core/metrics"
+	"github.com/liukeqqs/core/selector"
+	xmetrics "github.com/liukeqqs/x/metrics"
 )
 
 type RouteOptions struct {

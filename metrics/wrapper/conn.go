@@ -6,11 +6,11 @@ import (
 	"net"
 	"syscall"
 
-	"github.com/go-gost/core/metadata"
-	"github.com/go-gost/core/metrics"
-	xnet "github.com/go-gost/x/internal/net"
-	"github.com/go-gost/x/internal/net/udp"
-	xmetrics "github.com/go-gost/x/metrics"
+	"github.com/liukeqqs/core/metadata"
+	"github.com/liukeqqs/core/metrics"
+	xnet "github.com/liukeqqs/x/internal/net"
+	"github.com/liukeqqs/x/internal/net/udp"
+	xmetrics "github.com/liukeqqs/x/metrics"
 )
 
 var (

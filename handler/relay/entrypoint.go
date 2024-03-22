@@ -5,17 +5,17 @@ import (
 	"net"
 	"time"
 
-	"github.com/go-gost/core/handler"
-	"github.com/go-gost/core/listener"
-	md "github.com/go-gost/core/metadata"
+	"github.com/liukeqqs/core/handler"
+	"github.com/liukeqqs/core/listener"
+	md "github.com/liukeqqs/core/metadata"
 	"github.com/go-gost/relay"
-	admission "github.com/go-gost/x/admission/wrapper"
-	xnet "github.com/go-gost/x/internal/net"
-	"github.com/go-gost/x/internal/net/proxyproto"
-	"github.com/go-gost/x/internal/util/mux"
-	climiter "github.com/go-gost/x/limiter/conn/wrapper"
-	limiter "github.com/go-gost/x/limiter/traffic/wrapper"
-	metrics "github.com/go-gost/x/metrics/wrapper"
+	admission "github.com/liukeqqs/x/admission/wrapper"
+	xnet "github.com/liukeqqs/x/internal/net"
+	"github.com/liukeqqs/x/internal/net/proxyproto"
+	"github.com/liukeqqs/x/internal/util/mux"
+	climiter "github.com/liukeqqs/x/limiter/conn/wrapper"
+	limiter "github.com/liukeqqs/x/limiter/traffic/wrapper"
+	metrics "github.com/liukeqqs/x/metrics/wrapper"
 )
 
 type tcpListener struct {

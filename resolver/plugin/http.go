@@ -9,10 +9,10 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/go-gost/core/logger"
-	"github.com/go-gost/core/resolver"
-	ctxvalue "github.com/go-gost/x/ctx"
-	"github.com/go-gost/x/internal/plugin"
+	"github.com/liukeqqs/core/logger"
+	"github.com/liukeqqs/core/resolver"
+	ctxvalue "github.com/liukeqqs/x/ctx"
+	"github.com/liukeqqs/x/internal/plugin"
 )
 
 type httpPluginRequest struct {

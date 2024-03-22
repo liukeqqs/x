@@ -4,10 +4,10 @@ import (
 	"context"
 	"io"
 
-	"github.com/go-gost/core/ingress"
-	"github.com/go-gost/core/logger"
+	"github.com/liukeqqs/core/ingress"
+	"github.com/liukeqqs/core/logger"
 	"github.com/go-gost/plugin/ingress/proto"
-	"github.com/go-gost/x/internal/plugin"
+	"github.com/liukeqqs/x/internal/plugin"
 	"google.golang.org/grpc"
 )
 

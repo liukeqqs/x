@@ -4,14 +4,14 @@ import (
 	"crypto/tls"
 	"strings"
 
-	"github.com/go-gost/core/bypass"
-	"github.com/go-gost/core/logger"
-	xbypass "github.com/go-gost/x/bypass"
-	bypass_plugin "github.com/go-gost/x/bypass/plugin"
-	"github.com/go-gost/x/config"
-	"github.com/go-gost/x/internal/loader"
-	"github.com/go-gost/x/internal/plugin"
-	"github.com/go-gost/x/registry"
+	"github.com/liukeqqs/core/bypass"
+	"github.com/liukeqqs/core/logger"
+	xbypass "github.com/liukeqqs/x/bypass"
+	bypass_plugin "github.com/liukeqqs/x/bypass/plugin"
+	"github.com/liukeqqs/x/config"
+	"github.com/liukeqqs/x/internal/loader"
+	"github.com/liukeqqs/x/internal/plugin"
+	"github.com/liukeqqs/x/registry"
 )
 
 func ParseBypass(cfg *config.BypassConfig) bypass.Bypass {

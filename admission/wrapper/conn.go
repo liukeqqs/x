@@ -7,10 +7,10 @@ import (
 	"net"
 	"syscall"
 
-	"github.com/go-gost/core/admission"
-	"github.com/go-gost/core/metadata"
-	xnet "github.com/go-gost/x/internal/net"
-	"github.com/go-gost/x/internal/net/udp"
+	"github.com/liukeqqs/core/admission"
+	"github.com/liukeqqs/core/metadata"
+	xnet "github.com/liukeqqs/x/internal/net"
+	"github.com/liukeqqs/x/internal/net/udp"
 )
 
 var (

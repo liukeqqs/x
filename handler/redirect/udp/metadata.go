@@ -1,7 +1,7 @@
 package redirect
 
 import (
-	mdata "github.com/go-gost/core/metadata"
+	mdata "github.com/liukeqqs/core/metadata"
 )
 
 type metadata struct{}

@@ -1,8 +1,8 @@
 package http2
 
 import (
-	mdata "github.com/go-gost/core/metadata"
-	mdutil "github.com/go-gost/core/metadata/util"
+	mdata "github.com/liukeqqs/core/metadata"
+	mdutil "github.com/liukeqqs/core/metadata/util"
 )
 
 const (

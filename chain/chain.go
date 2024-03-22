@@ -3,11 +3,11 @@ package chain
 import (
 	"context"
 
-	"github.com/go-gost/core/chain"
-	"github.com/go-gost/core/hop"
-	"github.com/go-gost/core/logger"
-	"github.com/go-gost/core/metadata"
-	"github.com/go-gost/core/selector"
+	"github.com/liukeqqs/core/chain"
+	"github.com/liukeqqs/core/hop"
+	"github.com/liukeqqs/core/logger"
+	"github.com/liukeqqs/core/metadata"
+	"github.com/liukeqqs/core/selector"
 )
 
 var (

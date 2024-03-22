@@ -5,16 +5,16 @@ import (
 	"net"
 	"time"
 
-	"github.com/go-gost/core/listener"
-	"github.com/go-gost/core/logger"
-	mdata "github.com/go-gost/core/metadata"
-	"github.com/go-gost/core/router"
-	xnet "github.com/go-gost/x/internal/net"
-	limiter "github.com/go-gost/x/limiter/traffic/wrapper"
-	mdx "github.com/go-gost/x/metadata"
-	metrics "github.com/go-gost/x/metrics/wrapper"
-	"github.com/go-gost/x/registry"
-	stats "github.com/go-gost/x/stats/wrapper"
+	"github.com/liukeqqs/core/listener"
+	"github.com/liukeqqs/core/logger"
+	mdata "github.com/liukeqqs/core/metadata"
+	"github.com/liukeqqs/core/router"
+	xnet "github.com/liukeqqs/x/internal/net"
+	limiter "github.com/liukeqqs/x/limiter/traffic/wrapper"
+	mdx "github.com/liukeqqs/x/metadata"
+	metrics "github.com/liukeqqs/x/metrics/wrapper"
+	"github.com/liukeqqs/x/registry"
+	stats "github.com/liukeqqs/x/stats/wrapper"
 )
 
 func init() {

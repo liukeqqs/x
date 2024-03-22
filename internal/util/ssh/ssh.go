@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/go-gost/core/auth"
+	"github.com/liukeqqs/core/auth"
 	"golang.org/x/crypto/ssh"
 )
 

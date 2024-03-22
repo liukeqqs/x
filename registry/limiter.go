@@ -3,9 +3,9 @@ package registry
 import (
 	"context"
 
-	"github.com/go-gost/core/limiter/conn"
-	"github.com/go-gost/core/limiter/rate"
-	"github.com/go-gost/core/limiter/traffic"
+	"github.com/liukeqqs/core/limiter/conn"
+	"github.com/liukeqqs/core/limiter/rate"
+	"github.com/liukeqqs/core/limiter/traffic"
 )
 
 type trafficLimiterRegistry struct {

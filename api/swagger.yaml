@@ -19,7 +19,7 @@ definitions:
                 type: string
                 x-go-name: PathPrefix
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     AdmissionConfig:
         properties:
             file:
@@ -48,7 +48,7 @@ definitions:
                 type: boolean
                 x-go-name: Whitelist
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     AuthConfig:
         properties:
             password:
@@ -58,7 +58,7 @@ definitions:
                 type: string
                 x-go-name: Username
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     AutherConfig:
         properties:
             auths:
@@ -80,7 +80,7 @@ definitions:
             reload:
                 $ref: '#/definitions/Duration'
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     BypassConfig:
         properties:
             file:
@@ -109,7 +109,7 @@ definitions:
                 type: boolean
                 x-go-name: Whitelist
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     ChainConfig:
         properties:
             hops:
@@ -125,7 +125,7 @@ definitions:
                 type: string
                 x-go-name: Name
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     ChainGroupConfig:
         properties:
             chains:
@@ -136,7 +136,7 @@ definitions:
             selector:
                 $ref: '#/definitions/SelectorConfig'
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     Config:
         properties:
             admissions:
@@ -225,7 +225,7 @@ definitions:
             tls:
                 $ref: '#/definitions/TLSConfig'
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     ConnectorConfig:
         properties:
             auth:
@@ -240,7 +240,7 @@ definitions:
                 type: string
                 x-go-name: Type
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     DialerConfig:
         properties:
             auth:
@@ -255,7 +255,7 @@ definitions:
                 type: string
                 x-go-name: Type
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     Duration:
         description: |-
             A Duration represents the elapsed time between two instants
@@ -270,7 +270,7 @@ definitions:
                 type: string
                 x-go-name: Path
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     FileRecorder:
         properties:
             path:
@@ -280,7 +280,7 @@ definitions:
                 type: string
                 x-go-name: Sep
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     ForwardNodeConfig:
         properties:
             addr:
@@ -316,7 +316,7 @@ definitions:
             tls:
                 $ref: '#/definitions/TLSNodeConfig'
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     ForwarderConfig:
         properties:
             name:
@@ -330,7 +330,7 @@ definitions:
             selector:
                 $ref: '#/definitions/SelectorConfig'
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     HTTPLoader:
         properties:
             timeout:
@@ -339,7 +339,7 @@ definitions:
                 type: string
                 x-go-name: URL
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     HTTPNodeConfig:
         properties:
             header:
@@ -351,7 +351,7 @@ definitions:
                 type: string
                 x-go-name: Host
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     HTTPRecorder:
         properties:
             timeout:
@@ -360,7 +360,7 @@ definitions:
                 type: string
                 x-go-name: URL
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     HandlerConfig:
         properties:
             auth:
@@ -395,7 +395,7 @@ definitions:
                 type: string
                 x-go-name: Type
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     HopConfig:
         properties:
             bypass:
@@ -438,7 +438,7 @@ definitions:
             sockopts:
                 $ref: '#/definitions/SockOptsConfig'
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     HostMappingConfig:
         properties:
             aliases:
@@ -453,7 +453,7 @@ definitions:
                 type: string
                 x-go-name: IP
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     HostsConfig:
         properties:
             file:
@@ -475,7 +475,7 @@ definitions:
             reload:
                 $ref: '#/definitions/Duration'
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     IngressConfig:
         properties:
             file:
@@ -497,7 +497,7 @@ definitions:
                 type: array
                 x-go-name: Rules
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     IngressRuleConfig:
         properties:
             endpoint:
@@ -507,7 +507,7 @@ definitions:
                 type: string
                 x-go-name: Hostname
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     LimiterConfig:
         properties:
             file:
@@ -529,7 +529,7 @@ definitions:
             reload:
                 $ref: '#/definitions/Duration'
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     ListenerConfig:
         properties:
             auth:
@@ -557,7 +557,7 @@ definitions:
                 type: string
                 x-go-name: Type
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     LogConfig:
         properties:
             format:
@@ -572,7 +572,7 @@ definitions:
             rotation:
                 $ref: '#/definitions/LogRotationConfig'
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     LogRotationConfig:
         properties:
             compress:
@@ -614,7 +614,7 @@ definitions:
                 type: integer
                 x-go-name: MaxSize
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     MetricsConfig:
         properties:
             addr:
@@ -629,7 +629,7 @@ definitions:
                 type: string
                 x-go-name: Path
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     NameserverConfig:
         properties:
             addr:
@@ -658,7 +658,7 @@ definitions:
             ttl:
                 $ref: '#/definitions/Duration'
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     NodeConfig:
         properties:
             addr:
@@ -713,7 +713,7 @@ definitions:
             tls:
                 $ref: '#/definitions/TLSNodeConfig'
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     PluginConfig:
         properties:
             addr:
@@ -730,14 +730,14 @@ definitions:
                 type: string
                 x-go-name: Type
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     ProfilingConfig:
         properties:
             addr:
                 type: string
                 x-go-name: Addr
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     RecorderConfig:
         properties:
             file:
@@ -754,7 +754,7 @@ definitions:
             tcp:
                 $ref: '#/definitions/TCPRecorder'
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     RecorderObject:
         properties:
             Metadata:
@@ -767,7 +767,7 @@ definitions:
                 type: string
                 x-go-name: Record
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     RedisLoader:
         properties:
             addr:
@@ -787,7 +787,7 @@ definitions:
                 type: string
                 x-go-name: Type
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     RedisRecorder:
         properties:
             addr:
@@ -807,7 +807,7 @@ definitions:
                 type: string
                 x-go-name: Type
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     ResolverConfig:
         properties:
             name:
@@ -821,7 +821,7 @@ definitions:
             plugin:
                 $ref: '#/definitions/PluginConfig'
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     Response:
         properties:
             code:
@@ -832,7 +832,7 @@ definitions:
                 type: string
                 x-go-name: Msg
         type: object
-        x-go-package: github.com/go-gost/x/api
+        x-go-package: github.com/liukeqqs/x/api
     RouterConfig:
         properties:
             file:
@@ -854,7 +854,7 @@ definitions:
                 type: array
                 x-go-name: Routes
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     RouterRouteConfig:
         properties:
             gateway:
@@ -864,7 +864,7 @@ definitions:
                 type: string
                 x-go-name: Net
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     SDConfig:
         properties:
             name:
@@ -873,7 +873,7 @@ definitions:
             plugin:
                 $ref: '#/definitions/PluginConfig'
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     SelectorConfig:
         properties:
             failTimeout:
@@ -886,7 +886,7 @@ definitions:
                 type: string
                 x-go-name: Strategy
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     ServiceConfig:
         properties:
             addr:
@@ -948,7 +948,7 @@ definitions:
             sockopts:
                 $ref: '#/definitions/SockOptsConfig'
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     SockOptsConfig:
         properties:
             mark:
@@ -956,7 +956,7 @@ definitions:
                 type: integer
                 x-go-name: Mark
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     TCPRecorder:
         properties:
             addr:
@@ -965,7 +965,7 @@ definitions:
             timeout:
                 $ref: '#/definitions/Duration'
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     TLSConfig:
         properties:
             caFile:
@@ -994,7 +994,7 @@ definitions:
             validity:
                 $ref: '#/definitions/Duration'
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     TLSNodeConfig:
         properties:
             options:
@@ -1006,7 +1006,7 @@ definitions:
                 type: string
                 x-go-name: ServerName
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
     TLSOptions:
         properties:
             cipherSuites:
@@ -1021,7 +1021,7 @@ definitions:
                 type: string
                 x-go-name: MinVersion
         type: object
-        x-go-package: github.com/go-gost/x/config
+        x-go-package: github.com/liukeqqs/x/config
 info:
     title: Documentation of Web API.
     version: 1.0.0

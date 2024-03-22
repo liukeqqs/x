@@ -6,14 +6,14 @@ import (
 	"net"
 	"time"
 
-	"github.com/go-gost/core/limiter/traffic"
-	"github.com/go-gost/core/logger"
+	"github.com/liukeqqs/core/limiter/traffic"
+	"github.com/liukeqqs/core/logger"
 	"github.com/go-gost/gosocks5"
-	ctxvalue "github.com/go-gost/x/ctx"
-	netpkg "github.com/go-gost/x/internal/net"
-	"github.com/go-gost/x/limiter/traffic/wrapper"
-	"github.com/go-gost/x/stats"
-	stats_wrapper "github.com/go-gost/x/stats/wrapper"
+	ctxvalue "github.com/liukeqqs/x/ctx"
+	netpkg "github.com/liukeqqs/x/internal/net"
+	"github.com/liukeqqs/x/limiter/traffic/wrapper"
+	"github.com/liukeqqs/x/stats"
+	stats_wrapper "github.com/liukeqqs/x/stats/wrapper"
 )
 
 func (h *socks5Handler) handleConnect(ctx context.Context, conn net.Conn, network, address string, log logger.Logger) error {

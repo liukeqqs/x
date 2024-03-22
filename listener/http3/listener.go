@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/go-gost/core/listener"
-	"github.com/go-gost/core/logger"
-	md "github.com/go-gost/core/metadata"
-	xnet "github.com/go-gost/x/internal/net"
-	mdx "github.com/go-gost/x/metadata"
-	"github.com/go-gost/x/registry"
+	"github.com/liukeqqs/core/listener"
+	"github.com/liukeqqs/core/logger"
+	md "github.com/liukeqqs/core/metadata"
+	xnet "github.com/liukeqqs/x/internal/net"
+	mdx "github.com/liukeqqs/x/metadata"
+	"github.com/liukeqqs/x/registry"
 	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3"
 )

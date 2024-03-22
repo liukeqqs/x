@@ -4,10 +4,10 @@ import (
 	"crypto/tls"
 	"strings"
 
-	"github.com/go-gost/core/observer"
-	"github.com/go-gost/x/config"
-	"github.com/go-gost/x/internal/plugin"
-	observer_plugin "github.com/go-gost/x/observer/plugin"
+	"github.com/liukeqqs/core/observer"
+	"github.com/liukeqqs/x/config"
+	"github.com/liukeqqs/x/internal/plugin"
+	observer_plugin "github.com/liukeqqs/x/observer/plugin"
 )
 
 func ParseObserver(cfg *config.ObserverConfig) observer.Observer {

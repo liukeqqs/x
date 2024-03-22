@@ -6,9 +6,9 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/go-gost/core/connector"
+	"github.com/liukeqqs/core/connector"
 	"github.com/go-gost/relay"
-	"github.com/go-gost/x/internal/util/mux"
+	"github.com/liukeqqs/x/internal/util/mux"
 )
 
 // Bind implements connector.Binder.

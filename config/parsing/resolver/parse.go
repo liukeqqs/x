@@ -5,13 +5,13 @@ import (
 	"net"
 	"strings"
 
-	"github.com/go-gost/core/logger"
-	"github.com/go-gost/core/resolver"
-	"github.com/go-gost/x/config"
-	"github.com/go-gost/x/internal/plugin"
-	"github.com/go-gost/x/registry"
-	xresolver "github.com/go-gost/x/resolver"
-	resolver_plugin "github.com/go-gost/x/resolver/plugin"
+	"github.com/liukeqqs/core/logger"
+	"github.com/liukeqqs/core/resolver"
+	"github.com/liukeqqs/x/config"
+	"github.com/liukeqqs/x/internal/plugin"
+	"github.com/liukeqqs/x/registry"
+	xresolver "github.com/liukeqqs/x/resolver"
+	resolver_plugin "github.com/liukeqqs/x/resolver/plugin"
 )
 
 func ParseResolver(cfg *config.ResolverConfig) (resolver.Resolver, error) {

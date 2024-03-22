@@ -5,13 +5,13 @@ import (
 	"net"
 	"time"
 
-	"github.com/go-gost/core/logger"
+	"github.com/liukeqqs/core/logger"
 	"github.com/go-gost/gosocks5"
-	ctxvalue "github.com/go-gost/x/ctx"
-	"github.com/go-gost/x/internal/net/udp"
-	"github.com/go-gost/x/internal/util/socks"
-	"github.com/go-gost/x/stats"
-	stats_wrapper "github.com/go-gost/x/stats/wrapper"
+	ctxvalue "github.com/liukeqqs/x/ctx"
+	"github.com/liukeqqs/x/internal/net/udp"
+	"github.com/liukeqqs/x/internal/util/socks"
+	"github.com/liukeqqs/x/stats"
+	stats_wrapper "github.com/liukeqqs/x/stats/wrapper"
 )
 
 func (h *socks5Handler) handleUDPTun(ctx context.Context, conn net.Conn, network, address string, log logger.Logger) error {

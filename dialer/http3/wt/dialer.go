@@ -6,9 +6,9 @@ import (
 	"net"
 	"sync"
 
-	"github.com/go-gost/core/dialer"
-	md "github.com/go-gost/core/metadata"
-	"github.com/go-gost/x/registry"
+	"github.com/liukeqqs/core/dialer"
+	md "github.com/liukeqqs/core/metadata"
+	"github.com/liukeqqs/x/registry"
 	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3"
 	wt "github.com/quic-go/webtransport-go"

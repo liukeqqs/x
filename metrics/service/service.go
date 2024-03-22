@@ -4,8 +4,8 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/go-gost/core/auth"
-	"github.com/go-gost/core/service"
+	"github.com/liukeqqs/core/auth"
+	"github.com/liukeqqs/core/service"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 

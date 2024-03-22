@@ -5,8 +5,8 @@ import (
 	"net"
 	"syscall"
 
-	limiter "github.com/go-gost/core/limiter/conn"
-	"github.com/go-gost/core/metadata"
+	limiter "github.com/liukeqqs/core/limiter/conn"
+	"github.com/liukeqqs/core/metadata"
 )
 
 var (

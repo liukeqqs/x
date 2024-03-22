@@ -3,7 +3,7 @@
 package router
 
 import (
-	"github.com/go-gost/core/router"
+	"github.com/liukeqqs/core/router"
 )
 
 func (*localRouter) setSysRoutes(routes ...*router.Route) error {

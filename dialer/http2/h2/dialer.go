@@ -12,10 +12,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-gost/core/dialer"
-	"github.com/go-gost/core/logger"
-	md "github.com/go-gost/core/metadata"
-	"github.com/go-gost/x/registry"
+	"github.com/liukeqqs/core/dialer"
+	"github.com/liukeqqs/core/logger"
+	md "github.com/liukeqqs/core/metadata"
+	"github.com/liukeqqs/x/registry"
 	"golang.org/x/net/http2"
 )
 

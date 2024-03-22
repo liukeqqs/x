@@ -9,15 +9,15 @@ import (
 	"net/http"
 	"strings"
 
-	admission "github.com/go-gost/x/admission/wrapper"
-	limiter "github.com/go-gost/x/limiter/traffic/wrapper"
+	admission "github.com/liukeqqs/x/admission/wrapper"
+	limiter "github.com/liukeqqs/x/limiter/traffic/wrapper"
 
-	"github.com/go-gost/core/listener"
-	"github.com/go-gost/core/logger"
-	md "github.com/go-gost/core/metadata"
-	metrics "github.com/go-gost/x/metrics/wrapper"
-	"github.com/go-gost/x/registry"
-	stats "github.com/go-gost/x/stats/wrapper"
+	"github.com/liukeqqs/core/listener"
+	"github.com/liukeqqs/core/logger"
+	md "github.com/liukeqqs/core/metadata"
+	metrics "github.com/liukeqqs/x/metrics/wrapper"
+	"github.com/liukeqqs/x/registry"
+	stats "github.com/liukeqqs/x/stats/wrapper"
 	"github.com/miekg/dns"
 )
 

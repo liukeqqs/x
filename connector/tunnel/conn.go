@@ -8,10 +8,10 @@ import (
 	"math"
 	"net"
 
-	"github.com/go-gost/core/common/bufpool"
-	mdata "github.com/go-gost/core/metadata"
 	"github.com/go-gost/relay"
-	xrelay "github.com/go-gost/x/internal/util/relay"
+	"github.com/liukeqqs/core/common/bufpool"
+	mdata "github.com/liukeqqs/core/metadata"
+	xrelay "github.com/liukeqqs/x/internal/util/relay"
 )
 
 type udpConn struct {

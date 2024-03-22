@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"net"
 
-	"github.com/go-gost/core/common/bufpool"
 	"github.com/go-gost/gosocks5"
 	"github.com/go-gost/relay"
+	"github.com/liukeqqs/core/common/bufpool"
 )
 
 func StatusText(code uint8) string {

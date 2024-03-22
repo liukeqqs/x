@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	mdata "github.com/go-gost/core/metadata"
+	mdata "github.com/liukeqqs/core/metadata"
 )
 
 // a dummy HTTP3 server conn used by HTTP3 handler

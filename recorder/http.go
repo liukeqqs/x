@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-gost/core/recorder"
+	"github.com/liukeqqs/core/recorder"
 )
 
 type httpRecorderOptions struct {

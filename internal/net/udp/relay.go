@@ -4,9 +4,9 @@ import (
 	"context"
 	"net"
 
-	"github.com/go-gost/core/bypass"
-	"github.com/go-gost/core/common/bufpool"
-	"github.com/go-gost/core/logger"
+	"github.com/liukeqqs/core/bypass"
+	"github.com/liukeqqs/core/common/bufpool"
+	"github.com/liukeqqs/core/logger"
 )
 
 type Relay struct {

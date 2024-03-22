@@ -1,8 +1,8 @@
 package registry
 
 import (
-	"github.com/go-gost/core/handler"
-	"github.com/go-gost/core/logger"
+	"github.com/liukeqqs/core/handler"
+	"github.com/liukeqqs/core/logger"
 )
 
 type NewHandler func(opts ...handler.Option) handler.Handler

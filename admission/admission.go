@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-gost/core/admission"
-	"github.com/go-gost/core/logger"
-	"github.com/go-gost/x/internal/loader"
-	"github.com/go-gost/x/internal/matcher"
+	"github.com/liukeqqs/core/admission"
+	"github.com/liukeqqs/core/logger"
+	"github.com/liukeqqs/x/internal/loader"
+	"github.com/liukeqqs/x/internal/matcher"
 )
 
 type options struct {

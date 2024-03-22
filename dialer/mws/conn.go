@@ -3,7 +3,7 @@ package mws
 import (
 	"net"
 
-	"github.com/go-gost/x/internal/util/mux"
+	"github.com/liukeqqs/x/internal/util/mux"
 )
 
 type muxSession struct {

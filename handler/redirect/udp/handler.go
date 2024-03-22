@@ -6,11 +6,11 @@ import (
 	"net"
 	"time"
 
-	"github.com/go-gost/core/chain"
-	"github.com/go-gost/core/handler"
-	md "github.com/go-gost/core/metadata"
-	netpkg "github.com/go-gost/x/internal/net"
-	"github.com/go-gost/x/registry"
+	"github.com/liukeqqs/core/chain"
+	"github.com/liukeqqs/core/handler"
+	md "github.com/liukeqqs/core/metadata"
+	netpkg "github.com/liukeqqs/x/internal/net"
+	"github.com/liukeqqs/x/registry"
 )
 
 func init() {

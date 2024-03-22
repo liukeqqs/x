@@ -4,11 +4,11 @@ import (
 	"context"
 	"io"
 
-	"github.com/go-gost/core/bypass"
-	"github.com/go-gost/core/logger"
+	"github.com/liukeqqs/core/bypass"
+	"github.com/liukeqqs/core/logger"
 	"github.com/go-gost/plugin/bypass/proto"
-	ctxvalue "github.com/go-gost/x/ctx"
-	"github.com/go-gost/x/internal/plugin"
+	ctxvalue "github.com/liukeqqs/x/ctx"
+	"github.com/liukeqqs/x/internal/plugin"
 	"google.golang.org/grpc"
 )
 

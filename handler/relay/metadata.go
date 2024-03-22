@@ -4,9 +4,9 @@ import (
 	"math"
 	"time"
 
-	mdata "github.com/go-gost/core/metadata"
-	mdutil "github.com/go-gost/core/metadata/util"
-	"github.com/go-gost/x/internal/util/mux"
+	mdata "github.com/liukeqqs/core/metadata"
+	mdutil "github.com/liukeqqs/core/metadata/util"
+	"github.com/liukeqqs/x/internal/util/mux"
 )
 
 type metadata struct {

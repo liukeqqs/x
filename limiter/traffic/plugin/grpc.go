@@ -4,11 +4,11 @@ import (
 	"context"
 	"io"
 
-	"github.com/go-gost/core/limiter/traffic"
-	"github.com/go-gost/core/logger"
 	"github.com/go-gost/plugin/limiter/traffic/proto"
-	"github.com/go-gost/x/internal/plugin"
-	xtraffic "github.com/go-gost/x/limiter/traffic"
+	"github.com/liukeqqs/core/limiter/traffic"
+	"github.com/liukeqqs/core/logger"
+	"github.com/liukeqqs/x/internal/plugin"
+	xtraffic "github.com/liukeqqs/x/limiter/traffic"
 	"google.golang.org/grpc"
 )
 

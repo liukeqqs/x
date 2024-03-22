@@ -3,8 +3,8 @@ package stats
 import (
 	"sync"
 
-	"github.com/go-gost/core/observer"
-	"github.com/go-gost/x/stats"
+	"github.com/liukeqqs/core/observer"
+	"github.com/liukeqqs/x/stats"
 )
 
 type HandlerStats struct {

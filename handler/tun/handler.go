@@ -8,13 +8,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-gost/core/chain"
-	"github.com/go-gost/core/handler"
-	"github.com/go-gost/core/hop"
-	md "github.com/go-gost/core/metadata"
-	"github.com/go-gost/core/router"
-	tun_util "github.com/go-gost/x/internal/util/tun"
-	"github.com/go-gost/x/registry"
+	"github.com/liukeqqs/core/chain"
+	"github.com/liukeqqs/core/handler"
+	"github.com/liukeqqs/core/hop"
+	md "github.com/liukeqqs/core/metadata"
+	"github.com/liukeqqs/core/router"
+	tun_util "github.com/liukeqqs/x/internal/util/tun"
+	"github.com/liukeqqs/x/registry"
 	"github.com/songgao/water/waterutil"
 )
 

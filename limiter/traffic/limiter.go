@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strconv"
 
-	limiter "github.com/go-gost/core/limiter/traffic"
+	limiter "github.com/liukeqqs/core/limiter/traffic"
 	"golang.org/x/time/rate"
 )
 

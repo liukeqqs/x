@@ -6,14 +6,14 @@ import (
 	"net"
 	"time"
 
-	"github.com/go-gost/core/chain"
-	"github.com/go-gost/core/common/bufpool"
-	"github.com/go-gost/core/handler"
-	"github.com/go-gost/core/logger"
-	md "github.com/go-gost/core/metadata"
-	"github.com/go-gost/x/internal/util/relay"
-	"github.com/go-gost/x/internal/util/ss"
-	"github.com/go-gost/x/registry"
+	"github.com/liukeqqs/core/chain"
+	"github.com/liukeqqs/core/common/bufpool"
+	"github.com/liukeqqs/core/handler"
+	"github.com/liukeqqs/core/logger"
+	md "github.com/liukeqqs/core/metadata"
+	"github.com/liukeqqs/x/internal/util/relay"
+	"github.com/liukeqqs/x/internal/util/ss"
+	"github.com/liukeqqs/x/registry"
 	"github.com/shadowsocks/go-shadowsocks2/core"
 )
 

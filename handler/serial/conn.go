@@ -7,7 +7,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/go-gost/core/recorder"
+	"github.com/liukeqqs/core/recorder"
 )
 
 type recorderConn struct {

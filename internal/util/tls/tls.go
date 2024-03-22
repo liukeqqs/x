@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-gost/core/logger"
-	"github.com/go-gost/x/config"
+	"github.com/liukeqqs/core/logger"
+	"github.com/liukeqqs/x/config"
 )
 
 const (

@@ -8,11 +8,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-gost/core/dialer"
-	"github.com/go-gost/core/logger"
-	md "github.com/go-gost/core/metadata"
-	icmp_pkg "github.com/go-gost/x/internal/util/icmp"
-	"github.com/go-gost/x/registry"
+	"github.com/liukeqqs/core/dialer"
+	"github.com/liukeqqs/core/logger"
+	md "github.com/liukeqqs/core/metadata"
+	icmp_pkg "github.com/liukeqqs/x/internal/util/icmp"
+	"github.com/liukeqqs/x/registry"
 	"github.com/quic-go/quic-go"
 	"golang.org/x/net/icmp"
 )

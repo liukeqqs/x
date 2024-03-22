@@ -7,12 +7,12 @@ import (
 	"sync"
 	"time"
 
-	net_dialer "github.com/go-gost/core/common/net/dialer"
-	"github.com/go-gost/core/dialer"
-	"github.com/go-gost/core/logger"
-	md "github.com/go-gost/core/metadata"
-	mdx "github.com/go-gost/x/metadata"
-	"github.com/go-gost/x/registry"
+	net_dialer "github.com/liukeqqs/core/common/net/dialer"
+	"github.com/liukeqqs/core/dialer"
+	"github.com/liukeqqs/core/logger"
+	md "github.com/liukeqqs/core/metadata"
+	mdx "github.com/liukeqqs/x/metadata"
+	"github.com/liukeqqs/x/registry"
 )
 
 func init() {

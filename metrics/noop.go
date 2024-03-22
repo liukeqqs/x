@@ -1,6 +1,6 @@
 package metrics
 
-import "github.com/go-gost/core/metrics"
+import "github.com/liukeqqs/core/metrics"
 
 var (
 	nopGauge    = &noopGauge{}

@@ -4,7 +4,7 @@ import (
 	"context"
 	"net"
 
-	"github.com/go-gost/core/hosts"
+	"github.com/liukeqqs/core/hosts"
 )
 
 type hostsRegistry struct {

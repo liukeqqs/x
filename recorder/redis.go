@@ -3,7 +3,7 @@ package recorder
 import (
 	"context"
 
-	"github.com/go-gost/core/recorder"
+	"github.com/liukeqqs/core/recorder"
 	"github.com/go-redis/redis/v8"
 )
 

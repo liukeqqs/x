@@ -6,11 +6,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-gost/core/chain"
-	"github.com/go-gost/core/logger"
-	"github.com/go-gost/core/resolver"
-	resolver_util "github.com/go-gost/x/internal/util/resolver"
-	"github.com/go-gost/x/resolver/exchanger"
+	"github.com/liukeqqs/core/chain"
+	"github.com/liukeqqs/core/logger"
+	"github.com/liukeqqs/core/resolver"
+	resolver_util "github.com/liukeqqs/x/internal/util/resolver"
+	"github.com/liukeqqs/x/resolver/exchanger"
 	"github.com/miekg/dns"
 )
 

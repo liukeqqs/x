@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"net"
 
-	"github.com/go-gost/core/common/bufpool"
+	"github.com/liukeqqs/core/common/bufpool"
 	"github.com/go-gost/gosocks5"
 )
 

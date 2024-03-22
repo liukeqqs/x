@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-gost/core/auth"
-	"github.com/go-gost/core/logger"
+	"github.com/liukeqqs/core/auth"
+	"github.com/liukeqqs/core/logger"
 )
 
 func mwLogger() gin.HandlerFunc {

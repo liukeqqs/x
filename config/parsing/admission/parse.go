@@ -4,14 +4,14 @@ import (
 	"crypto/tls"
 	"strings"
 
-	"github.com/go-gost/core/admission"
-	"github.com/go-gost/core/logger"
-	xadmission "github.com/go-gost/x/admission"
-	admission_plugin "github.com/go-gost/x/admission/plugin"
-	"github.com/go-gost/x/config"
-	"github.com/go-gost/x/internal/loader"
-	"github.com/go-gost/x/internal/plugin"
-	"github.com/go-gost/x/registry"
+	"github.com/liukeqqs/core/admission"
+	"github.com/liukeqqs/core/logger"
+	xadmission "github.com/liukeqqs/x/admission"
+	admission_plugin "github.com/liukeqqs/x/admission/plugin"
+	"github.com/liukeqqs/x/config"
+	"github.com/liukeqqs/x/internal/loader"
+	"github.com/liukeqqs/x/internal/plugin"
+	"github.com/liukeqqs/x/registry"
 )
 
 func ParseAdmission(cfg *config.AdmissionConfig) admission.Admission {

@@ -3,8 +3,8 @@ package serial
 import (
 	"time"
 
-	md "github.com/go-gost/core/metadata"
-	mdutil "github.com/go-gost/core/metadata/util"
+	md "github.com/liukeqqs/core/metadata"
+	mdutil "github.com/liukeqqs/core/metadata/util"
 )
 
 type metadata struct {

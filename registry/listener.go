@@ -1,8 +1,8 @@
 package registry
 
 import (
-	"github.com/go-gost/core/listener"
-	"github.com/go-gost/core/logger"
+	"github.com/liukeqqs/core/listener"
+	"github.com/liukeqqs/core/logger"
 )
 
 type NewListener func(opts ...listener.Option) listener.Listener

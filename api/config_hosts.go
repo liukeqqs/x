@@ -4,9 +4,9 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-gost/x/config"
-	parser "github.com/go-gost/x/config/parsing/hosts"
-	"github.com/go-gost/x/registry"
+	"github.com/liukeqqs/x/config"
+	parser "github.com/liukeqqs/x/config/parsing/hosts"
+	"github.com/liukeqqs/x/registry"
 )
 
 // swagger:parameters createHostsRequest

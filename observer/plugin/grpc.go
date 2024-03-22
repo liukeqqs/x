@@ -4,12 +4,12 @@ import (
 	"context"
 	"io"
 
-	"github.com/go-gost/core/logger"
-	"github.com/go-gost/core/observer"
+	"github.com/liukeqqs/core/logger"
+	"github.com/liukeqqs/core/observer"
 	"github.com/go-gost/plugin/observer/proto"
-	"github.com/go-gost/x/internal/plugin"
-	"github.com/go-gost/x/service"
-	"github.com/go-gost/x/stats"
+	"github.com/liukeqqs/x/internal/plugin"
+	"github.com/liukeqqs/x/service"
+	"github.com/liukeqqs/x/stats"
 	"google.golang.org/grpc"
 )
 

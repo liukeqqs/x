@@ -7,10 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-gost/core/dialer"
-	md "github.com/go-gost/core/metadata"
-	pht_util "github.com/go-gost/x/internal/util/pht"
-	"github.com/go-gost/x/registry"
+	"github.com/liukeqqs/core/dialer"
+	md "github.com/liukeqqs/core/metadata"
+	pht_util "github.com/liukeqqs/x/internal/util/pht"
+	"github.com/liukeqqs/x/registry"
 )
 
 func init() {

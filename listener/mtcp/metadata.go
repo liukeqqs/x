@@ -1,9 +1,9 @@
 package mtcp
 
 import (
-	md "github.com/go-gost/core/metadata"
-	mdutil "github.com/go-gost/core/metadata/util"
-	"github.com/go-gost/x/internal/util/mux"
+	md "github.com/liukeqqs/core/metadata"
+	mdutil "github.com/liukeqqs/core/metadata/util"
+	"github.com/liukeqqs/x/internal/util/mux"
 )
 
 const (

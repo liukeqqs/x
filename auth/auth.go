@@ -8,10 +8,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-gost/core/auth"
-	"github.com/go-gost/core/logger"
-	"github.com/go-gost/x/internal/loader"
-	xlogger "github.com/go-gost/x/logger"
+	"github.com/liukeqqs/core/auth"
+	"github.com/liukeqqs/core/logger"
+	"github.com/liukeqqs/x/internal/loader"
+	xlogger "github.com/liukeqqs/x/logger"
 )
 
 type options struct {

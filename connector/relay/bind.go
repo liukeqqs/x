@@ -6,12 +6,12 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/go-gost/core/common/net/udp"
-	"github.com/go-gost/core/connector"
-	"github.com/go-gost/core/logger"
+	"github.com/liukeqqs/core/common/net/udp"
+	"github.com/liukeqqs/core/connector"
+	"github.com/liukeqqs/core/logger"
 	"github.com/go-gost/relay"
-	"github.com/go-gost/x/internal/util/mux"
-	relay_util "github.com/go-gost/x/internal/util/relay"
+	"github.com/liukeqqs/x/internal/util/mux"
+	relay_util "github.com/liukeqqs/x/internal/util/relay"
 )
 
 // Bind implements connector.Binder.

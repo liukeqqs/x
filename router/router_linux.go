@@ -3,7 +3,7 @@ package router
 import (
 	"fmt"
 
-	"github.com/go-gost/core/router"
+	"github.com/liukeqqs/core/router"
 	"github.com/vishvananda/netlink"
 )
 

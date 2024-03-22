@@ -7,8 +7,8 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/go-gost/core/auth"
-	"github.com/go-gost/core/service"
+	"github.com/liukeqqs/core/auth"
+	"github.com/liukeqqs/core/service"
 )
 
 var (

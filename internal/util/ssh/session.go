@@ -5,7 +5,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/go-gost/core/logger"
+	"github.com/liukeqqs/core/logger"
 	"golang.org/x/crypto/ssh"
 )
 

@@ -10,10 +10,10 @@ import (
 	"net"
 	"sync"
 
-	"github.com/go-gost/core/common/bufpool"
-	mdata "github.com/go-gost/core/metadata"
+	"github.com/liukeqqs/core/common/bufpool"
+	mdata "github.com/liukeqqs/core/metadata"
 	"github.com/go-gost/relay"
-	xrelay "github.com/go-gost/x/internal/util/relay"
+	xrelay "github.com/liukeqqs/x/internal/util/relay"
 )
 
 type tcpConn struct {

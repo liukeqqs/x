@@ -1,7 +1,7 @@
 package conn
 
 import (
-	limiter "github.com/go-gost/core/limiter/conn"
+	limiter "github.com/liukeqqs/core/limiter/conn"
 )
 
 type ConnLimitGenerator interface {

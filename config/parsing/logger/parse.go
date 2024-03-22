@@ -5,10 +5,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/go-gost/core/logger"
-	"github.com/go-gost/x/config"
-	xlogger "github.com/go-gost/x/logger"
-	"github.com/go-gost/x/registry"
+	"github.com/liukeqqs/core/logger"
+	"github.com/liukeqqs/x/config"
+	xlogger "github.com/liukeqqs/x/logger"
+	"github.com/liukeqqs/x/registry"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 

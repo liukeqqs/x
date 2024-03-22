@@ -3,7 +3,7 @@ package registry
 import (
 	"context"
 
-	"github.com/go-gost/core/sd"
+	"github.com/liukeqqs/core/sd"
 )
 
 type sdRegistry struct {

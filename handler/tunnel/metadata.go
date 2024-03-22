@@ -4,15 +4,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-gost/core/ingress"
-	"github.com/go-gost/core/logger"
-	mdata "github.com/go-gost/core/metadata"
-	mdutil "github.com/go-gost/core/metadata/util"
-	"github.com/go-gost/core/sd"
+	"github.com/liukeqqs/core/ingress"
+	"github.com/liukeqqs/core/logger"
+	mdata "github.com/liukeqqs/core/metadata"
+	mdutil "github.com/liukeqqs/core/metadata/util"
+	"github.com/liukeqqs/core/sd"
 	"github.com/go-gost/relay"
-	xingress "github.com/go-gost/x/ingress"
-	"github.com/go-gost/x/internal/util/mux"
-	"github.com/go-gost/x/registry"
+	xingress "github.com/liukeqqs/x/ingress"
+	"github.com/liukeqqs/x/internal/util/mux"
+	"github.com/liukeqqs/x/registry"
 )
 
 const (

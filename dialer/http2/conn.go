@@ -5,7 +5,7 @@ import (
 	"net"
 	"time"
 
-	mdata "github.com/go-gost/core/metadata"
+	mdata "github.com/liukeqqs/core/metadata"
 )
 
 // a dummy HTTP2 client conn used by HTTP2 client connector

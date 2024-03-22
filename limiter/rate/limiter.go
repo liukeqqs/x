@@ -4,7 +4,7 @@ import (
 	"sort"
 	"time"
 
-	limiter "github.com/go-gost/core/limiter/rate"
+	limiter "github.com/liukeqqs/core/limiter/rate"
 	"golang.org/x/time/rate"
 )
 

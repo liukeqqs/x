@@ -6,14 +6,14 @@ import (
 	"net"
 	"time"
 
-	"github.com/go-gost/core/chain"
-	"github.com/go-gost/core/handler"
-	md "github.com/go-gost/core/metadata"
+	"github.com/liukeqqs/core/chain"
+	"github.com/liukeqqs/core/handler"
+	md "github.com/liukeqqs/core/metadata"
 	"github.com/go-gost/gosocks5"
-	ctxvalue "github.com/go-gost/x/ctx"
-	"github.com/go-gost/x/internal/util/socks"
-	stats_util "github.com/go-gost/x/internal/util/stats"
-	"github.com/go-gost/x/registry"
+	ctxvalue "github.com/liukeqqs/x/ctx"
+	"github.com/liukeqqs/x/internal/util/socks"
+	stats_util "github.com/liukeqqs/x/internal/util/stats"
+	"github.com/liukeqqs/x/registry"
 )
 
 var (
