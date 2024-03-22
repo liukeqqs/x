@@ -3,10 +3,10 @@ package net
 import (
 	"bufio"
 	"io"
+	"log"
 	"net"
 
 	"github.com/liukeqqs/core/common/bufpool"
-	"github.com/liukeqqs/core/logger"
 )
 
 const (
@@ -33,8 +33,9 @@ func Transport(rw1, rw2 io.ReadWriter) error {
 func CopyBuffer(dst io.Writer, src io.Reader, bufSize int) error {
 	buf := bufpool.Get(bufSize)
 	defer bufpool.Put(buf)
+
 	bytes, err := io.CopyBuffer(dst, src, buf)
-	logger.Warnf("[PPTVaa = buf] %s", bytes)
+	log.Print("[PPTVaa = bufs] %s", bytes)
 	return err
 }
 
