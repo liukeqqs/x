@@ -137,7 +137,6 @@ func (h *socks5Handler) Handle(ctx context.Context, conn net.Conn, opts ...handl
 }
 
 func (h *socks5Handler) Close() error {
-
 	if h.cancel != nil {
 		h.cancel()
 	}
