@@ -55,7 +55,6 @@ func Transport1(rw1, rw2 io.ReadWriter, address string) error {
 func CopyBuffer1(dst io.Writer, src io.Reader, bufSize int, address string) error {
 	buf := bufpool.Get(bufSize)
 	defer bufpool.Put(buf)
-
 	bytes, err := io.CopyBuffer(dst, src, buf)
 	log.Printf("[消耗流量：]--%s------%s", address, bytes)
 	return err
