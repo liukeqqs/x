@@ -35,8 +35,8 @@ func WrapConn(service string, c net.Conn) net.Conn {
 }
 
 func (c *serverConn) Read(b []byte) (n int, err error) {
-	log.Printf("[Write：]--%s", "1")
 	n, err = c.Conn.Read(b)
+	log.Printf("[Read：]--%s----%s", c.Conn.RemoteAddr(), float64(n))
 	if counter := xmetrics.GetCounter(
 		xmetrics.MetricServiceTransferInputBytesCounter,
 		metrics.Labels{
@@ -48,8 +48,8 @@ func (c *serverConn) Read(b []byte) (n int, err error) {
 }
 
 func (c *serverConn) Write(b []byte) (n int, err error) {
-	log.Printf("[Write：]--%s", "2")
 	n, err = c.Conn.Write(b)
+	log.Printf("[Read：]--%s----%s", c.Conn.RemoteAddr(), float64(n))
 	if counter := xmetrics.GetCounter(
 		xmetrics.MetricServiceTransferOutputBytesCounter,
 		metrics.Labels{
