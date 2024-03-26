@@ -117,7 +117,7 @@ func (h *socks5Handler) Handle(ctx context.Context, conn net.Conn, opts ...handl
 
 	switch req.Cmd {
 	case gosocks5.CmdConnect:
-		return h.handleConnect(ctx, conn, "tcp", address, log)
+		//return h.handleConnect(ctx, conn, "tcp", address, log)
 	case gosocks5.CmdBind:
 		return h.handleBind(ctx, conn, "tcp", address, log)
 	case socks.CmdMuxBind:
