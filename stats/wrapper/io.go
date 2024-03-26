@@ -27,7 +27,6 @@ func WrapReadWriter(rw io.ReadWriter, stats *stats.Stats) io.ReadWriter {
 func (p *readWriter) Read(b []byte) (n int, err error) {
 	n, err = p.ReadWriter.Read(b)
 	log.Printf("[Read：]--%s", int64(n))
-
 	p.stats.Add(stats.KindInputBytes, int64(n))
 
 	return
