@@ -39,11 +39,17 @@ func CopyBuffer(dst io.Writer, src io.Reader, bufSize int) error {
 func Transport1(rw1, rw2 io.ReadWriter, address string, sid string) error {
 	errc := make(chan error, 1)
 	go func() {
-		errc <- CopyBuffer1(rw1, rw2, bufferSize, address, sid)
+		buf := bufpool.Get(bufferSize)
+		defer bufpool.Put(buf)
+		bytes, err := io.CopyBuffer(rw1, rw2, buf)
+		log.Printf("[上行流量：]--%s------%s------%s", address, bytes, sid)
 	}()
 
 	go func() {
-		errc <- CopyBuffer1(rw2, rw1, bufferSize, address, sid)
+		buf := bufpool.Get(bufferSize)
+		defer bufpool.Put(buf)
+		bytes, err := io.CopyBuffer(rw2, rw1, buf)
+		log.Printf("[下行流量：]--%s------%s------%s", address, bytes, sid)
 	}()
 
 	if err := <-errc; err != nil && err != io.EOF {
