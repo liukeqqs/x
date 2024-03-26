@@ -38,7 +38,7 @@ func (c *serverConn) Read(b []byte) (n int, err error) {
 	if counter := xmetrics.GetCounter(
 		xmetrics.MetricServiceTransferInputBytesCounter,
 		metrics.Labels{
-			"service1": c.service,
+			"service": c.service,
 		}); counter != nil {
 		counter.Add(float64(n))
 	}
@@ -50,7 +50,7 @@ func (c *serverConn) Write(b []byte) (n int, err error) {
 	if counter := xmetrics.GetCounter(
 		xmetrics.MetricServiceTransferOutputBytesCounter,
 		metrics.Labels{
-			"service1": c.service,
+			"service": c.service,
 		}); counter != nil {
 		counter.Add(float64(n))
 	}
