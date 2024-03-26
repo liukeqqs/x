@@ -3,6 +3,7 @@ package wrapper
 import (
 	"errors"
 	"io"
+	"log"
 	"net"
 	"syscall"
 
@@ -34,6 +35,7 @@ func WrapConn(service string, c net.Conn) net.Conn {
 }
 
 func (c *serverConn) Read(b []byte) (n int, err error) {
+	log.Printf("[Write：]--%s", "1")
 	n, err = c.Conn.Read(b)
 	if counter := xmetrics.GetCounter(
 		xmetrics.MetricServiceTransferInputBytesCounter,
@@ -46,6 +48,7 @@ func (c *serverConn) Read(b []byte) (n int, err error) {
 }
 
 func (c *serverConn) Write(b []byte) (n int, err error) {
+	log.Printf("[Write：]--%s", "2")
 	n, err = c.Conn.Write(b)
 	if counter := xmetrics.GetCounter(
 		xmetrics.MetricServiceTransferOutputBytesCounter,
@@ -89,6 +92,7 @@ func WrapPacketConn(service string, pc net.PacketConn) net.PacketConn {
 }
 
 func (c *packetConn) ReadFrom(p []byte) (n int, addr net.Addr, err error) {
+	log.Printf("[Write：]--%s", "3")
 	n, addr, err = c.PacketConn.ReadFrom(p)
 	if counter := xmetrics.GetCounter(
 		xmetrics.MetricServiceTransferInputBytesCounter,
@@ -101,6 +105,7 @@ func (c *packetConn) ReadFrom(p []byte) (n int, addr net.Addr, err error) {
 }
 
 func (c *packetConn) WriteTo(p []byte, addr net.Addr) (n int, err error) {
+	log.Printf("[Write：]--%s", "4")
 	n, err = c.PacketConn.WriteTo(p, addr)
 	if counter := xmetrics.GetCounter(
 		xmetrics.MetricServiceTransferOutputBytesCounter,
@@ -153,6 +158,7 @@ func (c *udpConn) SetWriteBuffer(n int) error {
 }
 
 func (c *udpConn) Read(b []byte) (n int, err error) {
+	log.Printf("[Write：]--%s", "5")
 	if nc, ok := c.PacketConn.(io.Reader); ok {
 		n, err = nc.Read(b)
 		if counter := xmetrics.GetCounter(
@@ -169,6 +175,7 @@ func (c *udpConn) Read(b []byte) (n int, err error) {
 }
 
 func (c *udpConn) ReadFrom(p []byte) (n int, addr net.Addr, err error) {
+	log.Printf("[Write：]--%s", "6")
 	n, addr, err = c.PacketConn.ReadFrom(p)
 	if counter := xmetrics.GetCounter(
 		xmetrics.MetricServiceTransferInputBytesCounter,
@@ -181,6 +188,7 @@ func (c *udpConn) ReadFrom(p []byte) (n int, addr net.Addr, err error) {
 }
 
 func (c *udpConn) ReadFromUDP(b []byte) (n int, addr *net.UDPAddr, err error) {
+	log.Printf("[Write：]--%s", "7")
 	if nc, ok := c.PacketConn.(udp.ReadUDP); ok {
 		n, addr, err = nc.ReadFromUDP(b)
 		if counter := xmetrics.GetCounter(
@@ -197,6 +205,7 @@ func (c *udpConn) ReadFromUDP(b []byte) (n int, addr *net.UDPAddr, err error) {
 }
 
 func (c *udpConn) ReadMsgUDP(b, oob []byte) (n, oobn, flags int, addr *net.UDPAddr, err error) {
+	log.Printf("[Write：]--%s", "8")
 	if nc, ok := c.PacketConn.(udp.ReadUDP); ok {
 		n, oobn, flags, addr, err = nc.ReadMsgUDP(b, oob)
 		if counter := xmetrics.GetCounter(
@@ -213,6 +222,7 @@ func (c *udpConn) ReadMsgUDP(b, oob []byte) (n, oobn, flags int, addr *net.UDPAd
 }
 
 func (c *udpConn) Write(b []byte) (n int, err error) {
+	log.Printf("[Write：]--%s", "9")
 	if nc, ok := c.PacketConn.(io.Writer); ok {
 		n, err = nc.Write(b)
 		if counter := xmetrics.GetCounter(
@@ -229,6 +239,7 @@ func (c *udpConn) Write(b []byte) (n int, err error) {
 }
 
 func (c *udpConn) WriteTo(p []byte, addr net.Addr) (n int, err error) {
+	log.Printf("[Write：]--%s", "10")
 	n, err = c.PacketConn.WriteTo(p, addr)
 	if counter := xmetrics.GetCounter(
 		xmetrics.MetricServiceTransferOutputBytesCounter,
@@ -241,6 +252,7 @@ func (c *udpConn) WriteTo(p []byte, addr net.Addr) (n int, err error) {
 }
 
 func (c *udpConn) WriteToUDP(b []byte, addr *net.UDPAddr) (n int, err error) {
+	log.Printf("[Write：]--%s", "11")
 	if nc, ok := c.PacketConn.(udp.WriteUDP); ok {
 		n, err = nc.WriteToUDP(b, addr)
 		if counter := xmetrics.GetCounter(
@@ -257,6 +269,7 @@ func (c *udpConn) WriteToUDP(b []byte, addr *net.UDPAddr) (n int, err error) {
 }
 
 func (c *udpConn) WriteMsgUDP(b, oob []byte, addr *net.UDPAddr) (n, oobn int, err error) {
+	log.Printf("[Write：]--%s", "12")
 	if nc, ok := c.PacketConn.(udp.WriteUDP); ok {
 		n, oobn, err = nc.WriteMsgUDP(b, oob, addr)
 		if counter := xmetrics.GetCounter(
