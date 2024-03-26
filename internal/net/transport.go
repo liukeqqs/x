@@ -36,14 +36,14 @@ func CopyBuffer(dst io.Writer, src io.Reader, bufSize int) error {
 	_, err := io.CopyBuffer(dst, src, buf)
 	return err
 }
-func Transport1(rw1, rw2 io.ReadWriter, address string) error {
+func Transport1(rw1, rw2 io.ReadWriter, address string, sid string) error {
 	errc := make(chan error, 1)
 	go func() {
-		errc <- CopyBuffer1(rw1, rw2, bufferSize, address)
+		errc <- CopyBuffer1(rw1, rw2, bufferSize, address, sid)
 	}()
 
 	go func() {
-		errc <- CopyBuffer1(rw2, rw1, bufferSize, address)
+		errc <- CopyBuffer1(rw2, rw1, bufferSize, address, sid)
 	}()
 
 	if err := <-errc; err != nil && err != io.EOF {
@@ -52,12 +52,12 @@ func Transport1(rw1, rw2 io.ReadWriter, address string) error {
 	return nil
 }
 
-func CopyBuffer1(dst io.Writer, src io.Reader, bufSize int, address string) error {
+func CopyBuffer1(dst io.Writer, src io.Reader, bufSize int, address string, sid string) error {
 	buf := bufpool.Get(bufSize)
 	defer bufpool.Put(buf)
 	bytes, err := io.CopyBuffer(dst, src, buf)
 
-	log.Printf("[消耗流量：]--%s------%s", address, bytes)
+	log.Printf("[消耗流量：]--%s------%s------%s", address, bytes, sid)
 	return err
 }
 

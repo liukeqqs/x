@@ -73,7 +73,7 @@ func (h *socks5Handler) handleConnect(ctx context.Context, conn net.Conn, networ
 	netpkg.Transport1(rw, cc, address, string(ctxvalue.SidFromContext(ctx)))
 	log.WithFields(map[string]any{
 		"duration": time.Since(t),
-	}).Infof("%s >-< %s --->%s --->%s", conn.RemoteAddr(), address, ctxvalue.SidFromContext(ctx), ctxvalue.ContextWithClientID(ctx, clientID))
+	}).Infof("%s >-< %s --->%s", conn.RemoteAddr(), address, ctxvalue.SidFromContext(ctx))
 
 	return nil
 }
