@@ -262,6 +262,7 @@ func ParseService(cfg *config.ServiceConfig) (service.Service, error) {
 		xservice.LoggerOption(serviceLogger),
 	)
 
+	serviceLogger.Infof("Init %s", "初始化")
 	serviceLogger.Infof("listening on %s/%s", s.Addr().String(), s.Addr().Network())
 	return s, nil
 }
