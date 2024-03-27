@@ -131,8 +131,7 @@ func (p *redisStringLoader) GetValSet(ctx context.Context, key string, object in
 			return
 		}
 		info.Bytes += _info.Bytes
-		info.RepeatNums += 1
-		info.Unix = _info.Unix
+		info.RepeatNums = _info.RepeatNums + 1
 		paramByte, err = json.Marshal(info)
 		if err != nil {
 			return
