@@ -296,6 +296,7 @@ func asyncSetRedis() {
 func getRand(length int) string {
 	str := "0123456789abcdefghijklmnopqrstuvwxyz"
 	bytes := []byte(str)
+
 	result := make([]byte, 0)
 	// 用当前时间（纳秒级别）生成随机种子
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
