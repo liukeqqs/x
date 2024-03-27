@@ -27,6 +27,10 @@ func (l *fileLoader) Load(ctx context.Context) (io.Reader, error) {
 	return bytes.NewReader(data), nil
 }
 
+func (p *fileLoader) Set(ctx context.Context, object interface{}) error {
+	return nil
+}
+
 // List implements Lister interface{}
 func (l *fileLoader) List(ctx context.Context) (list []string, err error) {
 	f, err := os.Open(l.filename)
