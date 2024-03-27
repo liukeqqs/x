@@ -32,6 +32,7 @@ import (
 	"github.com/liukeqqs/x/registry"
 	xservice "github.com/liukeqqs/x/service"
 	"github.com/liukeqqs/x/stats"
+	"log"
 )
 
 func ParseService(cfg *config.ServiceConfig) (service.Service, error) {
@@ -276,11 +277,13 @@ func asyncSetRedis() {
 		select {
 		case r := <-xnet.RChan:
 			paramByte, err := json.Marshal(r)
+			log.Printf("[asyncSetRedis---1]:--%s", "1")
 			if err != nil {
 				continue
 			}
+			log.Printf("[asyncSetRedis---2]:--%s", "2")
 			loader.RedisStringLoader("27.102.134.86:6379", loader.DBRedisLoaderOption(0),
-				loader.PasswordRedisLoaderOption(""),
+				loader.PasswordRedisLoaderOption("test123"),
 				loader.KeyRedisLoaderOption(r.Sid)).Set(context.TODO(), string(paramByte))
 		}
 	}
