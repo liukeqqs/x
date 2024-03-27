@@ -97,15 +97,15 @@ func (p *redisStringLoader) Load(ctx context.Context) (io.Reader, error) {
 	return bytes.NewReader(v), nil
 }
 
-func (p *redisStringLoader) Set(ctx context.Context, object interface{}) error {
-	err := p.client.Set(ctx, p.key, object, time.Hour*24).Err()
+func (p *redisStringLoader) Set(ctx context.Context, key string, object interface{}) error {
+	err := p.client.Set(ctx, key, object, time.Hour*24*30).Err()
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (p *redisStringLoader) GetValSet(ctx context.Context, object interface{}) (err error) {
+func (p *redisStringLoader) GetValSet(ctx context.Context, key string, object interface{}) (err error) {
 	var (
 		data      string
 		exist     = true
@@ -117,7 +117,7 @@ func (p *redisStringLoader) GetValSet(ctx context.Context, object interface{}) (
 			err = r.(error)
 		}
 	}()
-	data, err = p.client.Get(ctx, p.key).Result()
+	data, err = p.client.Get(ctx, key).Result()
 	if err == redis.Nil {
 		exist = false
 		err = nil
@@ -131,11 +131,13 @@ func (p *redisStringLoader) GetValSet(ctx context.Context, object interface{}) (
 			return
 		}
 		info.Bytes += _info.Bytes
+		info.RepeatNums += 1
+		info.Unix = _info.Unix
 		paramByte, err = json.Marshal(info)
 		if err != nil {
 			return
 		}
-		err = p.client.Set(ctx, p.key, string(paramByte), time.Hour*24).Err()
+		err = p.client.Set(ctx, key, string(paramByte), time.Hour*24*30).Err()
 		if err != nil {
 			return err
 		}
@@ -147,7 +149,7 @@ func (p *redisStringLoader) GetValSet(ctx context.Context, object interface{}) (
 	if err != nil {
 		return
 	}
-	err = p.client.Set(ctx, p.key, string(paramByte), time.Hour*24).Err()
+	err = p.client.Set(ctx, key, string(paramByte), time.Hour*24*30).Err()
 	if err != nil {
 		return err
 	}
@@ -195,11 +197,11 @@ func (p *redisSetLoader) Load(ctx context.Context) (io.Reader, error) {
 	return bytes.NewReader([]byte(strings.Join(v, "\n"))), nil
 }
 
-func (p *redisSetLoader) Set(ctx context.Context, object interface{}) error {
+func (p *redisSetLoader) Set(ctx context.Context, key string, object interface{}) error {
 	return nil
 }
 
-func (p *redisSetLoader) GetValSet(ctx context.Context, object interface{}) error {
+func (p *redisSetLoader) GetValSet(ctx context.Context, key string, object interface{}) error {
 	return nil
 }
 
@@ -239,7 +241,7 @@ func RedisListLoader(addr string, opts ...RedisLoaderOption) Loader {
 	}
 }
 
-func (p *redisListLoader) Set(ctx context.Context, object interface{}) error {
+func (p *redisListLoader) Set(ctx context.Context, key string, object interface{}) error {
 	return nil
 }
 
@@ -251,7 +253,7 @@ func (p *redisListLoader) Load(ctx context.Context) (io.Reader, error) {
 	return bytes.NewReader([]byte(strings.Join(v, "\n"))), nil
 }
 
-func (p *redisListLoader) GetValSet(ctx context.Context, object interface{}) error {
+func (p *redisListLoader) GetValSet(ctx context.Context, key string, object interface{}) error {
 	return nil
 }
 
@@ -303,11 +305,11 @@ func (p *redisHashLoader) Load(ctx context.Context) (io.Reader, error) {
 	}
 	return bytes.NewBufferString(b.String()), nil
 }
-func (p *redisHashLoader) Set(ctx context.Context, object interface{}) error {
+func (p *redisHashLoader) Set(ctx context.Context, key string, object interface{}) error {
 	return nil
 }
 
-func (p *redisHashLoader) GetValSet(ctx context.Context, object interface{}) error {
+func (p *redisHashLoader) GetValSet(ctx context.Context, key string, object interface{}) error {
 	return nil
 }
 

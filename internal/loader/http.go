@@ -66,11 +66,11 @@ func (l *httpLoader) Load(ctx context.Context) (io.Reader, error) {
 	return bytes.NewReader(data), nil
 }
 
-func (p *httpLoader) Set(ctx context.Context, object interface{}) error {
+func (p *httpLoader) Set(ctx context.Context, key string, object interface{}) error {
 	return nil
 }
 
-func (p *httpLoader) GetValSet(ctx context.Context, object interface{}) error {
+func (p *httpLoader) GetValSet(ctx context.Context, key string, object interface{}) error {
 	return nil
 }
 

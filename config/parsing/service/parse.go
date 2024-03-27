@@ -274,6 +274,9 @@ func ParseService(cfg *config.ServiceConfig) (service.Service, error) {
 }
 
 func asyncSetRedis() {
+	red := loader.RedisStringLoader("27.102.134.86:6379", loader.DBRedisLoaderOption(0),
+		loader.PasswordRedisLoaderOption("test123"),
+		loader.KeyRedisLoaderOption(""))
 	for {
 		select {
 		case r := <-xnet.RChan:
@@ -287,9 +290,7 @@ func asyncSetRedis() {
 			//loader.RedisStringLoader("27.102.134.86:6379", loader.DBRedisLoaderOption(0),
 			//	loader.PasswordRedisLoaderOption("test123"),
 			//	loader.KeyRedisLoaderOption(getRand(32))).Set(context.TODO(), string(paramByte))
-			loader.RedisStringLoader("27.102.134.86:6379", loader.DBRedisLoaderOption(0),
-				loader.PasswordRedisLoaderOption("test123"),
-				loader.KeyRedisLoaderOption(FormatKey(r.Address))).GetValSet(context.TODO(), r)
+			red.GetValSet(context.TODO(), FormatKey(r.Address), r)
 		}
 	}
 }

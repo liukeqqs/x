@@ -2,11 +2,11 @@ package net
 
 import (
 	"bufio"
+	"github.com/liukeqqs/core/common/bufpool"
 	"io"
 	"log"
 	"net"
-
-	"github.com/liukeqqs/core/common/bufpool"
+	"time"
 )
 
 const (
@@ -18,9 +18,11 @@ var (
 )
 
 type Info struct {
-	Address string `json:"address"`
+	Address string `json:"-"`
 	Bytes   int64  `json:"bytes"`
-	Sid     string `json:"sid"`
+	//Sid     string `json:"sid"`
+	Unix       int64 `json:"unix"`
+	RepeatNums int   `json:"repeat_nums"`
 }
 
 func Transport(rw1, rw2 io.ReadWriter) error {
@@ -71,7 +73,7 @@ func CopyBuffer1(dst io.Writer, src io.Reader, bufSize int, address string, sid 
 	RChan <- Info{
 		Address: address,
 		Bytes:   bytes,
-		Sid:     sid,
+		Unix:    time.Now().Unix(),
 	}
 	return err
 }

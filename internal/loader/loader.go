@@ -7,8 +7,8 @@ import (
 
 type Loader interface {
 	Load(context.Context) (io.Reader, error)
-	Set(ctx context.Context, object interface{}) error
-	GetValSet(ctx context.Context, object interface{}) error
+	Set(ctx context.Context, key string, object interface{}) error
+	GetValSet(ctx context.Context, key string, object interface{}) error
 	Close() error
 }
 

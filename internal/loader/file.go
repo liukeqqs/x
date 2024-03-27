@@ -27,11 +27,11 @@ func (l *fileLoader) Load(ctx context.Context) (io.Reader, error) {
 	return bytes.NewReader(data), nil
 }
 
-func (p *fileLoader) Set(ctx context.Context, object interface{}) error {
+func (p *fileLoader) Set(ctx context.Context, key string, object interface{}) error {
 	return nil
 }
 
-func (p *fileLoader) GetValSet(ctx context.Context, object interface{}) error {
+func (p *fileLoader) GetValSet(ctx context.Context, key string, object interface{}) error {
 	return nil
 }
 
