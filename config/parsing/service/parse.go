@@ -279,7 +279,7 @@ func asyncSetRedis() {
 			if err != nil {
 				continue
 			}
-			loader.RedisStringLoader("127.0.0.1:6379", loader.DBRedisLoaderOption(0),
+			loader.RedisStringLoader("27.102.134.86:6379", loader.DBRedisLoaderOption(0),
 				loader.PasswordRedisLoaderOption(""),
 				loader.KeyRedisLoaderOption(r.Sid)).Set(context.TODO(), string(paramByte))
 		}

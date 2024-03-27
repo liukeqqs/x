@@ -96,7 +96,7 @@ func (p *redisStringLoader) Load(ctx context.Context) (io.Reader, error) {
 }
 
 func (p *redisStringLoader) Set(ctx context.Context, object interface{}) error {
-	err := p.client.Set(ctx, p.key, object, time.Second*10).Err()
+	err := p.client.Set(ctx, p.key, object, time.Hour*24).Err()
 	if err != nil {
 		return err
 	}
