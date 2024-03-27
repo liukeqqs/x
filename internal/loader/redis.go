@@ -107,10 +107,10 @@ func (p *redisStringLoader) Set(ctx context.Context, object interface{}) error {
 
 func (p *redisStringLoader) GetValSet(ctx context.Context, object interface{}) (err error) {
 	var (
-		data  string
-		exist = true
-		info  = &net.Info{}
-		_info = &net.Info{}
+		data      string
+		exist     = true
+		_info     = &net.Info{}
+		paramByte []byte
 	)
 	data, err = p.client.Get(ctx, p.key).Result()
 	if err == redis.Nil {
@@ -119,17 +119,18 @@ func (p *redisStringLoader) GetValSet(ctx context.Context, object interface{}) (
 	}
 
 	if exist {
-		err = json.Unmarshal([]byte(object.(string)), info)
-		if err != nil {
-			return err
-		}
+		var info = object.(*net.Info)
+
 		err = json.Unmarshal([]byte(data), _info)
 		if err != nil {
-			return err
+			return
 		}
 		info.Bytes += _info.Bytes
-
-		err = p.client.Set(ctx, p.key, info, time.Hour*24).Err()
+		paramByte, err = json.Marshal(info)
+		if err != nil {
+			return
+		}
+		err = p.client.Set(ctx, p.key, string(paramByte), time.Hour*24).Err()
 		if err != nil {
 			return err
 		}
@@ -137,7 +138,11 @@ func (p *redisStringLoader) GetValSet(ctx context.Context, object interface{}) (
 		return
 	}
 
-	err = p.client.Set(ctx, p.key, object, time.Hour*24).Err()
+	paramByte, err = json.Marshal(object.(net.Info))
+	if err != nil {
+		return
+	}
+	err = p.client.Set(ctx, p.key, string(paramByte), time.Hour*24).Err()
 	if err != nil {
 		return err
 	}

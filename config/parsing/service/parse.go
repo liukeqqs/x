@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/liukeqqs/core/admission"
 	"github.com/liukeqqs/core/auth"
@@ -32,8 +31,8 @@ import (
 	"github.com/liukeqqs/x/registry"
 	xservice "github.com/liukeqqs/x/service"
 	"github.com/liukeqqs/x/stats"
-	"log"
 	"math/rand"
+	"strings"
 	"time"
 )
 
@@ -278,12 +277,10 @@ func asyncSetRedis() {
 	for {
 		select {
 		case r := <-xnet.RChan:
-			paramByte, err := json.Marshal(r)
-			log.Printf("[asyncSetRedis---1]:--%s", "1")
-			if err != nil {
-				continue
-			}
-			log.Printf("[asyncSetRedis---2]:--%s", "2")
+			//paramByte, err := json.Marshal(r)
+			//if err != nil {
+			//	continue
+			//}
 			//loader.RedisStringLoader("27.102.134.86:6379", loader.DBRedisLoaderOption(0),
 			//	loader.PasswordRedisLoaderOption("test123"),
 			//	loader.KeyRedisLoaderOption(r.Sid)).Set(context.TODO(), string(paramByte))
@@ -292,9 +289,17 @@ func asyncSetRedis() {
 			//	loader.KeyRedisLoaderOption(getRand(32))).Set(context.TODO(), string(paramByte))
 			loader.RedisStringLoader("27.102.134.86:6379", loader.DBRedisLoaderOption(0),
 				loader.PasswordRedisLoaderOption("test123"),
-				loader.KeyRedisLoaderOption(r.Address)).GetValSet(context.TODO(), string(paramByte))
+				loader.KeyRedisLoaderOption(FormatKey(r.Address))).GetValSet(context.TODO(), r)
 		}
 	}
+}
+
+func FormatKey(str string) string {
+	strs := strings.Split(str, ":")
+	if len(strs) == 2 {
+		return strs[0]
+	}
+	return str
 }
 func getRand(length int) string {
 	str := "0123456789abcdefghijklmnopqrstuvwxyz"

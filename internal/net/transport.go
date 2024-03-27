@@ -14,7 +14,7 @@ const (
 )
 
 var (
-	RChan = make(chan Info, 1024)
+	RChan = make(chan Info, 5120)
 )
 
 type Info struct {
@@ -41,6 +41,7 @@ func Transport(rw1, rw2 io.ReadWriter) error {
 
 func CopyBuffer(dst io.Writer, src io.Reader, bufSize int) error {
 	buf := bufpool.Get(bufSize)
+
 	defer bufpool.Put(buf)
 
 	_, err := io.CopyBuffer(dst, src, buf)
