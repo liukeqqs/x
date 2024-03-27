@@ -287,9 +287,12 @@ func asyncSetRedis() {
 			//loader.RedisStringLoader("27.102.134.86:6379", loader.DBRedisLoaderOption(0),
 			//	loader.PasswordRedisLoaderOption("test123"),
 			//	loader.KeyRedisLoaderOption(r.Sid)).Set(context.TODO(), string(paramByte))
+			//loader.RedisStringLoader("27.102.134.86:6379", loader.DBRedisLoaderOption(0),
+			//	loader.PasswordRedisLoaderOption("test123"),
+			//	loader.KeyRedisLoaderOption(getRand(32))).Set(context.TODO(), string(paramByte))
 			loader.RedisStringLoader("27.102.134.86:6379", loader.DBRedisLoaderOption(0),
 				loader.PasswordRedisLoaderOption("test123"),
-				loader.KeyRedisLoaderOption(getRand(32))).Set(context.TODO(), string(paramByte))
+				loader.KeyRedisLoaderOption(r.Address)).GetValSet(context.TODO(), string(paramByte))
 		}
 	}
 }

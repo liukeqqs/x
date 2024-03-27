@@ -70,6 +70,10 @@ func (p *httpLoader) Set(ctx context.Context, object interface{}) error {
 	return nil
 }
 
+func (p *httpLoader) GetValSet(ctx context.Context, object interface{}) error {
+	return nil
+}
+
 func (l *httpLoader) Close() error {
 	return nil
 }

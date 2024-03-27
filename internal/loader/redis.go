@@ -3,8 +3,10 @@ package loader
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	redis "github.com/go-redis/redis/v8"
+	"github.com/liukeqqs/x/internal/net"
 	"io"
 	"strings"
 	"time"
@@ -103,6 +105,45 @@ func (p *redisStringLoader) Set(ctx context.Context, object interface{}) error {
 	return nil
 }
 
+func (p *redisStringLoader) GetValSet(ctx context.Context, object interface{}) (err error) {
+	var (
+		data  string
+		exist = true
+		info  = &net.Info{}
+		_info = &net.Info{}
+	)
+	data, err = p.client.Get(ctx, p.key).Result()
+	if err == redis.Nil {
+		exist = false
+		err = nil
+	}
+
+	if exist {
+		err = json.Unmarshal([]byte(object.(string)), info)
+		if err != nil {
+			return err
+		}
+		err = json.Unmarshal([]byte(data), _info)
+		if err != nil {
+			return err
+		}
+		info.Bytes += _info.Bytes
+
+		err = p.client.Set(ctx, p.key, info, time.Hour*24).Err()
+		if err != nil {
+			return err
+		}
+
+		return
+	}
+
+	err = p.client.Set(ctx, p.key, object, time.Hour*24).Err()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (p *redisStringLoader) Close() error {
 	return p.client.Close()
 }
@@ -145,6 +186,10 @@ func (p *redisSetLoader) Load(ctx context.Context) (io.Reader, error) {
 }
 
 func (p *redisSetLoader) Set(ctx context.Context, object interface{}) error {
+	return nil
+}
+
+func (p *redisSetLoader) GetValSet(ctx context.Context, object interface{}) error {
 	return nil
 }
 
@@ -196,6 +241,10 @@ func (p *redisListLoader) Load(ctx context.Context) (io.Reader, error) {
 	return bytes.NewReader([]byte(strings.Join(v, "\n"))), nil
 }
 
+func (p *redisListLoader) GetValSet(ctx context.Context, object interface{}) error {
+	return nil
+}
+
 // List implements Lister interface{}
 func (p *redisListLoader) List(ctx context.Context) ([]string, error) {
 	return p.client.LRange(ctx, p.key, 0, -1).Result()
@@ -245,6 +294,10 @@ func (p *redisHashLoader) Load(ctx context.Context) (io.Reader, error) {
 	return bytes.NewBufferString(b.String()), nil
 }
 func (p *redisHashLoader) Set(ctx context.Context, object interface{}) error {
+	return nil
+}
+
+func (p *redisHashLoader) GetValSet(ctx context.Context, object interface{}) error {
 	return nil
 }
 

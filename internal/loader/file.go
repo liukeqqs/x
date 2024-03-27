@@ -31,6 +31,10 @@ func (p *fileLoader) Set(ctx context.Context, object interface{}) error {
 	return nil
 }
 
+func (p *fileLoader) GetValSet(ctx context.Context, object interface{}) error {
+	return nil
+}
+
 // List implements Lister interface{}
 func (l *fileLoader) List(ctx context.Context) (list []string, err error) {
 	f, err := os.Open(l.filename)
