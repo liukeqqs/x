@@ -10,6 +10,7 @@ import (
 	"github.com/liukeqqs/core/limiter/traffic"
 	"github.com/liukeqqs/core/logger"
 	ctxvalue "github.com/liukeqqs/x/ctx"
+	netpkg "github.com/liukeqqs/x/internal/net"
 	"github.com/liukeqqs/x/limiter/traffic/wrapper"
 	"github.com/liukeqqs/x/stats"
 	stats_wrapper "github.com/liukeqqs/x/stats/wrapper"
@@ -69,7 +70,7 @@ func (h *socks5Handler) handleConnect(ctx context.Context, conn net.Conn, networ
 	t := time.Now()
 	log.Infof("%s <-> %s", conn.RemoteAddr(), address)
 
-	//netpkg.Transport1(rw, cc, address, string(ctxvalue.SidFromContext(ctx)))
+	netpkg.Transport1(rw, cc, address, string(ctxvalue.SidFromContext(ctx)))
 	log.WithFields(map[string]any{
 		"duration": time.Since(t),
 	}).Infof("%s >-< %s --->%s", conn.RemoteAddr(), address, ctxvalue.SidFromContext(ctx))
