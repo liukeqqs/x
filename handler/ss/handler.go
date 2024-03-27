@@ -120,7 +120,7 @@ func (h *ssHandler) Handle(ctx context.Context, conn net.Conn, opts ...handler.H
 	t := time.Now()
 	log.Infof("%s <-> %s", conn.RemoteAddr(), addr)
 	//netpkg.Transport(conn, cc)
-	netpkg.Transport1(conn, cc, addr, string(ctxvalue.SidFromContext(ctx)))
+	netpkg.Transport1(conn, cc, addr.String(), string(ctxvalue.SidFromContext(ctx)))
 	log.WithFields(map[string]any{
 		"duration": time.Since(t),
 	}).Infof("%s >-< %s", conn.RemoteAddr(), addr)

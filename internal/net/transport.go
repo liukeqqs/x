@@ -29,33 +29,6 @@ func Transport(rw1, rw2 io.ReadWriter) error {
 	return nil
 }
 
-/*
-	func SSTransport(rw1, rw2 io.ReadWriter, sendChan, receiveChan chan int64, errChan chan error) error {
-		go func() {
-			bytes, err := CopyBufferWithBytes(rw1, rw2, bufferSize)
-			sendChan <- bytes
-			errChan <- err
-		}()
-
-		go func() {
-			bytes, err := CopyBufferWithBytes(rw2, rw1, bufferSize)
-
-		}()
-
-		if err := <-errc; err != nil && err != io.EOF {
-			return err
-		}
-		return nil
-	}
-
-	func CopyBufferWithBytes(dst io.Writer, src io.Reader, bufSize int) (int64, error) {
-		buf := bufpool.Get(bufSize)
-		defer bufpool.Put(buf)
-
-		bytes, err := io.CopyBuffer(dst, src, buf)
-		return bytes, err
-	}
-*/
 func CopyBuffer(dst io.Writer, src io.Reader, bufSize int) error {
 	buf := bufpool.Get(bufSize)
 	defer bufpool.Put(buf)
