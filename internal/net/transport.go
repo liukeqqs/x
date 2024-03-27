@@ -13,6 +13,16 @@ const (
 	bufferSize = 64 * 1024
 )
 
+var (
+	RChan = make(chan Info, 1024)
+)
+
+type Info struct {
+	Address string `json:"address"`
+	Bytes   []byte `json:"bytes"`
+	Sid     string `json:"sid"`
+}
+
 func Transport(rw1, rw2 io.ReadWriter) error {
 	errc := make(chan error, 1)
 	go func() {
@@ -56,8 +66,12 @@ func CopyBuffer1(dst io.Writer, src io.Reader, bufSize int, address string, sid 
 	buf := bufpool.Get(bufSize)
 	defer bufpool.Put(buf)
 	bytes, err := io.CopyBuffer(dst, src, buf)
-
 	log.Printf("[消耗流量：]--%s------%s------%s", address, bytes, sid)
+	RChan <- Info{
+		Address: address,
+		Bytes:   bytes,
+		Sid:     sid,
+	}
 	return err
 }
 

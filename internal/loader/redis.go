@@ -6,13 +6,29 @@ import (
 	"fmt"
 	"io"
 	"strings"
+)
 
-	"github.com/go-redis/redis/v8"
+var (
+	client *redis.Client
 )
 
 const (
 	DefaultRedisKey = "gost"
 )
+
+func NewClient() {
+	client = redis.NewClient(&redis.Options{
+		Addr:     "127.0.0.1:6379",
+		Password: "",
+		DB:       0,
+	})
+
+	_, err := client.Ping().Result()
+	if err != nil {
+		panic(err)
+	}
+	return
+}
 
 type redisLoaderOptions struct {
 	db       int

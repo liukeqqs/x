@@ -261,10 +261,25 @@ func ParseService(cfg *config.ServiceConfig) (service.Service, error) {
 		xservice.ObserverOption(registry.ObserverRegistry().Get(cfg.Observer)),
 		xservice.LoggerOption(serviceLogger),
 	)
+	loader.NewClient()
+	go asyncSetRedis()
 
 	serviceLogger.Infof("Init %s", "初始化")
 	serviceLogger.Infof("listening on %s/%s", s.Addr().String(), s.Addr().Network())
 	return s, nil
+}
+
+func asyncSetRedis() {
+	for {
+		select {
+		case r := <-net.RChan:
+			paramByte, err := json.Marshal(r)
+			if err != nil {
+				continue
+			}
+			client.Set(r.Sid, string(paramByte), time.Second*10)
+		}
+	}
 }
 
 func parseForwarder(cfg *config.ForwarderConfig, log logger.Logger) (hop.Hop, error) {
