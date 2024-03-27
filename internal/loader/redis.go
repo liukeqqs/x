@@ -112,6 +112,11 @@ func (p *redisStringLoader) GetValSet(ctx context.Context, object interface{}) (
 		_info     = &net.Info{}
 		paramByte []byte
 	)
+	defer func() {
+		if r := recover(); r != nil {
+			err = r.(error)
+		}
+	}()
 	data, err = p.client.Get(ctx, p.key).Result()
 	if err == redis.Nil {
 		exist = false
