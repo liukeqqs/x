@@ -119,7 +119,7 @@ func (p *redisStringLoader) GetValSet(ctx context.Context, object interface{}) (
 	}
 
 	if exist {
-		var info = object.(*net.Info)
+		var info = object.(net.Info)
 
 		err = json.Unmarshal([]byte(data), _info)
 		if err != nil {
