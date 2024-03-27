@@ -19,7 +19,7 @@ var (
 
 type Info struct {
 	Address string `json:"address"`
-	Bytes   []byte `json:"bytes"`
+	Bytes   int64  `json:"bytes"`
 	Sid     string `json:"sid"`
 }
 

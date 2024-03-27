@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/go-redis/redis"
 	"io"
 	"strings"
 )
