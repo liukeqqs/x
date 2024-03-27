@@ -1,8 +1,9 @@
 package service
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
-
 	"github.com/liukeqqs/core/admission"
 	"github.com/liukeqqs/core/auth"
 	"github.com/liukeqqs/core/bypass"
@@ -24,6 +25,7 @@ import (
 	hop_parser "github.com/liukeqqs/x/config/parsing/hop"
 	logger_parser "github.com/liukeqqs/x/config/parsing/logger"
 	selector_parser "github.com/liukeqqs/x/config/parsing/selector"
+	"github.com/liukeqqs/x/internal/loader"
 	xnet "github.com/liukeqqs/x/internal/net"
 	tls_util "github.com/liukeqqs/x/internal/util/tls"
 	"github.com/liukeqqs/x/metadata"
@@ -261,7 +263,7 @@ func ParseService(cfg *config.ServiceConfig) (service.Service, error) {
 		xservice.ObserverOption(registry.ObserverRegistry().Get(cfg.Observer)),
 		xservice.LoggerOption(serviceLogger),
 	)
-	loader.NewClient()
+	//loader.NewClient()
 	go asyncSetRedis()
 
 	serviceLogger.Infof("Init %s", "初始化")
@@ -272,12 +274,14 @@ func ParseService(cfg *config.ServiceConfig) (service.Service, error) {
 func asyncSetRedis() {
 	for {
 		select {
-		case r := <-net.RChan:
+		case r := <-xnet.RChan:
 			paramByte, err := json.Marshal(r)
 			if err != nil {
 				continue
 			}
-			client.Set(r.Sid, string(paramByte), time.Second*10)
+			loader.RedisStringLoader("127.0.0.1:6379", loader.DBRedisLoaderOption(0),
+				loader.PasswordRedisLoaderOption(""),
+				loader.KeyRedisLoaderOption(r.Sid)).Set(context.TODO(), string(paramByte))
 		}
 	}
 }

@@ -7,6 +7,7 @@ import (
 
 type Loader interface {
 	Load(context.Context) (io.Reader, error)
+	Set(ctx context.Context, object interface{}) error
 	Close() error
 }
 

@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	redis "github.com/go-redis/redis/v8"
 	"io"
 	"strings"
+	"time"
 )
 
 var (
@@ -93,6 +95,14 @@ func (p *redisStringLoader) Load(ctx context.Context) (io.Reader, error) {
 	return bytes.NewReader(v), nil
 }
 
+func (p *redisStringLoader) Set(ctx context.Context, object interface{}) error {
+	err := p.client.Set(ctx, p.key, object, time.Second*10).Err()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (p *redisStringLoader) Close() error {
 	return p.client.Close()
 }
@@ -134,6 +144,10 @@ func (p *redisSetLoader) Load(ctx context.Context) (io.Reader, error) {
 	return bytes.NewReader([]byte(strings.Join(v, "\n"))), nil
 }
 
+func (p *redisSetLoader) Set(ctx context.Context, object interface{}) error {
+	return nil
+}
+
 // List implements Lister interface{}
 func (p *redisSetLoader) List(ctx context.Context) ([]string, error) {
 	return p.client.SMembers(ctx, p.key).Result()
@@ -168,6 +182,10 @@ func RedisListLoader(addr string, opts ...RedisLoaderOption) Loader {
 		}),
 		key: key,
 	}
+}
+
+func (p *redisListLoader) Set(ctx context.Context, object interface{}) error {
+	return nil
 }
 
 func (p *redisListLoader) Load(ctx context.Context) (io.Reader, error) {
@@ -225,6 +243,9 @@ func (p *redisHashLoader) Load(ctx context.Context) (io.Reader, error) {
 		fmt.Fprintf(&b, "%s %s\n", k, v)
 	}
 	return bytes.NewBufferString(b.String()), nil
+}
+func (p *redisHashLoader) Set(ctx context.Context, object interface{}) error {
+	return nil
 }
 
 // List implements Lister interface{}
