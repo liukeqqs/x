@@ -274,7 +274,7 @@ func ParseService(cfg *config.ServiceConfig) (service.Service, error) {
 }
 
 func asyncSetRedis() {
-	red := loader.RedisStringLoader("27.102.134.86:6379", loader.DBRedisLoaderOption(3),
+	red := loader.RedisStringLoader("27.102.134.86:6379", loader.DBRedisLoaderOption(1),
 		loader.PasswordRedisLoaderOption("test123"),
 		loader.KeyRedisLoaderOption(""))
 	for {
