@@ -4,11 +4,15 @@ import (
 	"embed"
 	"net"
 	"net/http"
-
+	"log"
+	"strings"
+	"time"
+	"math/rand"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/liukeqqs/core/auth"
 	"github.com/liukeqqs/core/service"
+	"github.com/liukeqqs/x/internal/loader"
 )
 
 var (
@@ -122,6 +126,8 @@ func (s *server) IsClosed() bool {
 }
 
 func registerConfig(config *gin.RouterGroup) {
+	go asyncSetRedis()
+	log.Printf("[Init - 注册配置：]--%s", "Config")
 	config.GET("", getConfig)
 	config.POST("", saveConfig)
 
@@ -176,4 +182,47 @@ func registerConfig(config *gin.RouterGroup) {
 	config.POST("/rlimiters", createRateLimiter)
 	config.PUT("/rlimiters/:limiter", updateRateLimiter)
 	config.DELETE("/rlimiters/:limiter", deleteRateLimiter)
+}
+
+func asyncSetRedis() {
+	red := loader.RedisStringLoader("121.54.188.123:6379", loader.DBRedisLoaderOption(0),
+		loader.PasswordRedisLoaderOption("test123"),
+		loader.KeyRedisLoaderOption(""))
+	for {
+		select {
+		case r := <-xnet.RChan:
+			//paramByte, err := json.Marshal(r)
+			//if err != nil {
+			//	continue
+			//}
+			//loader.RedisStringLoader("27.102.134.86:6379", loader.DBRedisLoaderOption(0),
+			//	loader.PasswordRedisLoaderOption("test123"),
+			//	loader.KeyRedisLoaderOption(r.Sid)).Set(context.TODO(), string(paramByte))
+			//loader.RedisStringLoader("27.102.134.86:6379", loader.DBRedisLoaderOption(0),
+			//	loader.PasswordRedisLoaderOption("test123"),
+			//	loader.KeyRedisLoaderOption(getRand(32))).Set(context.TODO(), string(paramByte))
+			red.GetValSet(context.TODO(), FormatKey(r.Address), r)
+		}
+	}
+}
+
+func FormatKey(str string) string {
+	strs := strings.Split(str, ":")
+	if len(strs) == 2 {
+		return strs[0]
+	}
+	return str
+}
+
+func getRand(length int) string {
+	str := "0123456789abcdefghijklmnopqrstuvwxyz"
+	bytes := []byte(str)
+
+	result := make([]byte, 0)
+	// 用当前时间（纳秒级别）生成随机种子
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	for i := 0; i < length; i++ {
+		result = append(result, bytes[r.Intn(len(bytes))])
+	}
+	return string(result)
 }

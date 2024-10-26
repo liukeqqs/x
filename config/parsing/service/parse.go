@@ -24,16 +24,12 @@ import (
 	hop_parser "github.com/liukeqqs/x/config/parsing/hop"
 	logger_parser "github.com/liukeqqs/x/config/parsing/logger"
 	selector_parser "github.com/liukeqqs/x/config/parsing/selector"
-	"github.com/liukeqqs/x/internal/loader"
 	xnet "github.com/liukeqqs/x/internal/net"
 	tls_util "github.com/liukeqqs/x/internal/util/tls"
 	"github.com/liukeqqs/x/metadata"
 	"github.com/liukeqqs/x/registry"
 	xservice "github.com/liukeqqs/x/service"
 	"github.com/liukeqqs/x/stats"
-	"math/rand"
-	"strings"
-	"time"
 )
 
 func ParseService(cfg *config.ServiceConfig) (service.Service, error) {
@@ -265,55 +261,10 @@ func ParseService(cfg *config.ServiceConfig) (service.Service, error) {
 		xservice.ObserverOption(registry.ObserverRegistry().Get(cfg.Observer)),
 		xservice.LoggerOption(serviceLogger),
 	)
-	//loader.NewClient()
-	go asyncSetRedis()
 
-	serviceLogger.Infof("Init %s", "初始化")
-	serviceLogger.Infof("listening on %s/%s", s.Addr().String(), s.Addr().Network())
 	return s, nil
 }
 
-func asyncSetRedis() {
-	red := loader.RedisStringLoader("27.102.134.86:6379", loader.DBRedisLoaderOption(0),
-		loader.PasswordRedisLoaderOption("test123"),
-		loader.KeyRedisLoaderOption(""))
-	for {
-		select {
-		case r := <-xnet.RChan:
-			//paramByte, err := json.Marshal(r)
-			//if err != nil {
-			//	continue
-			//}
-			//loader.RedisStringLoader("27.102.134.86:6379", loader.DBRedisLoaderOption(0),
-			//	loader.PasswordRedisLoaderOption("test123"),
-			//	loader.KeyRedisLoaderOption(r.Sid)).Set(context.TODO(), string(paramByte))
-			//loader.RedisStringLoader("27.102.134.86:6379", loader.DBRedisLoaderOption(0),
-			//	loader.PasswordRedisLoaderOption("test123"),
-			//	loader.KeyRedisLoaderOption(getRand(32))).Set(context.TODO(), string(paramByte))
-			red.GetValSet(context.TODO(), FormatKey(r.Address), r)
-		}
-	}
-}
-
-func FormatKey(str string) string {
-	strs := strings.Split(str, ":")
-	if len(strs) == 2 {
-		return strs[0]
-	}
-	return str
-}
-func getRand(length int) string {
-	str := "0123456789abcdefghijklmnopqrstuvwxyz"
-	bytes := []byte(str)
-
-	result := make([]byte, 0)
-	// 用当前时间（纳秒级别）生成随机种子
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	for i := 0; i < length; i++ {
-		result = append(result, bytes[r.Intn(len(bytes))])
-	}
-	return string(result)
-}
 func parseForwarder(cfg *config.ForwarderConfig, log logger.Logger) (hop.Hop, error) {
 	if cfg == nil {
 		return nil, nil
