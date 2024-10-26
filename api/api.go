@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"embed"
 	"net"
 	"net/http"
