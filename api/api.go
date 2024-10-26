@@ -14,7 +14,6 @@ import (
 	"github.com/liukeqqs/core/auth"
 	"github.com/liukeqqs/core/service"
 	"github.com/liukeqqs/x/internal/loader"
-	xchain "github.com/liukeqqs/x/chain"
 	xnet "github.com/liukeqqs/x/internal/net"
 )
 
