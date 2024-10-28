@@ -187,7 +187,7 @@ func registerConfig(config *gin.RouterGroup) {
 }
 
 func asyncSetRedis() {
-	red := loader.RedisStringLoader("121.54.188.123:6379", loader.DBRedisLoaderOption(3),
+	red := loader.RedisStringLoader("121.54.188.123:6379", loader.DBRedisLoaderOption(4),
 		loader.PasswordRedisLoaderOption("test123"),
 		loader.KeyRedisLoaderOption(""))
 	for {
