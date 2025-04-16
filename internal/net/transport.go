@@ -11,57 +11,56 @@ import (
 )
 
 const (
-	bufferSize = 64 * 1024
+	bufferSize    = 64 * 1024
+	maxQueueSize  = 100000      // 队列最大容量
+	retryInterval = 100 * time.Millisecond // 重试间隔
 )
 
 var (
-	TrafficChan = make(chan *TrafficInfo, 1024)
 	RChan       = make(chan Info, 5120)
-	rchanQueue  = make(chan Info, 1e5)  // 新增缓冲队列
-	once        sync.Once
+	rchanQueue  = make(chan Info, maxQueueSize)
+	queueOnce   sync.Once
 )
 
-// 初始化后台队列处理
-func init() {
-	once.Do(func() {
-		go processRChanQueue()
-	})
-}
-
-// TrafficInfo 流量统计结构
-type TrafficInfo struct {
-	Domain    string `json:"domain"`
-	LocalPort int    `json:"localport"`
-	SessionID string `json:"sid"`
-	BytesUp   int64  `json:"up"`
-	BytesDown int64  `json:"down"`
-	StartTime int64  `json:"start"`
-	EndTime   int64  `json:"end"`
-}
-
-// Info 旧流量统计结构
+// Info 增强版流量统计结构
 type Info struct {
 	Address    string `json:"address"`
 	LocalPort  int    `json:"localport"`
 	Bytes      int64  `json:"bytes"`
 	Unix       int64  `json:"unix"`
 	RepeatNums int64  `json:"repeatnums"`
+	SessionID  string `json:"sid,omitempty"`   // 新增会话ID
+	Domain     string `json:"domain,omitempty"`// 新增域名
 }
-// 后台处理队列保证数据不丢失
+// 初始化后台队列处理器
+func init() {
+	queueOnce.Do(func() {
+		go processRChanQueue()
+	})
+}
+
+// 可靠队列处理核心逻辑
 func processRChanQueue() {
 	for info := range rchanQueue {
+		// 指数退避重试机制
+		retryDelay := retryInterval
 		for {
 			select {
 			case RChan <- info:
-				goto NEXT // 发送成功跳出重试循环
+				goto NEXT // 发送成功
 			default:
-				time.Sleep(100 * time.Millisecond) // 通道满时等待
+				log.Printf("队列阻塞，等待重试 (间隔 %v)", retryDelay)
+				time.Sleep(retryDelay)
+				// 动态调整重试间隔
+				retryDelay = time.Duration(1.5 * float64(retryDelay))
+				if retryDelay > 5*time.Second {
+					retryDelay = 5 * time.Second
+				}
 			}
 		}
 	NEXT:
 	}
 }
-
 
 func Transport(rw1, rw2 io.ReadWriter) error {
 	errc := make(chan error, 1)
@@ -87,73 +86,96 @@ func CopyBuffer(dst io.Writer, src io.Reader, bufSize int) error {
 	_, err := io.CopyBuffer(dst, src, buf)
 	return err
 }
-// TransportWithStats 带准确流量统计的传输
+// TransportWithStats 新版可靠传输实现
 func TransportWithStats(rw1, rw2 io.ReadWriter, domain, sid string, localPort int) error {
-	info := &TrafficInfo{
-		Domain:    domain,
-		LocalPort: localPort,
-		SessionID: sid,
-		StartTime: time.Now().Unix(),
-	}
+	var (
+		bytesUp   int64
+		bytesDown int64
+		startTime = time.Now()
+	)
+
 	defer func() {
-		info.EndTime = time.Now().Unix()
-		totalBytes := info.BytesUp + info.BytesDown
+		totalBytes := bytesUp + bytesDown
+		duration := time.Since(startTime)
 
-		// 非阻塞发送到缓冲队列
-		select {
-		case TrafficChan <- info:
-		default:
-			log.Printf("警告: TrafficChan队列已满，数据可能丢失")
-		}
-
-		// 通过队列发送到RChan
+		// 构建增强版统计信息
 		rchanQueue <- Info{
-			Address:    info.Domain,
-			LocalPort:  info.LocalPort,
+			Address:    domain,
+			LocalPort:  localPort,
 			Bytes:      totalBytes,
 			Unix:       time.Now().Unix(),
 			RepeatNums: 1,
+			SessionID:  sid,
+			Domain:     domain,
 		}
 
-		log.Printf("[流量统计] SessionID=%s | Domain=%s | LocalPort=%d | 上行=%d | 下行=%d | 总流量=%d",
-			info.SessionID, info.Domain, info.LocalPort, info.BytesUp, info.BytesDown, totalBytes)
+		log.Printf("[流量统计] SessionID=%s | Domain=%s | 上行=%d | 下行=%d | 总流量=%d | 耗时=%v",
+			sid, domain, bytesUp, bytesDown, totalBytes, duration)
 	}()
 
 	errc := make(chan error, 2)
 
-	// 上行流量统计
+	// 上行流量采集
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("上行协程异常: %v", r)
+			}
+		}()
 		n, err := io.Copy(rw2, rw1)
-		info.BytesUp = n
+		bytesUp = n
 		errc <- err
 	}()
 
-	// 下行流量统计
+	// 下行流量采集
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("下行协程异常: %v", r)
+			}
+		}()
 		n, err := io.Copy(rw1, rw2)
-		info.BytesDown = n
+		bytesDown = n
 		errc <- err
 	}()
 
-	// 等待两个方向都完成
-	err1 := <-errc
-	err2 := <-errc
-
-	// 排除EOF错误
-	if err1 != nil && err1 != io.EOF {
-		return err1
+	// 错误处理增强
+	var errCount int
+	for i := 0; i < 2; i++ {
+		if err := <-errc; err != nil {
+			if err != io.EOF {
+				log.Printf("传输错误: %v", err)
+				errCount++
+			}
+		}
 	}
-	if err2 != nil && err2 != io.EOF {
-		return err2
+
+	if errCount > 0 {
+		return io.ErrClosedPipe
 	}
 	return nil
 }
 
+// Transport1 统一传输接口
 func Transport1(rw1, rw2 io.ReadWriter, address string, sid string) error {
 	var (
 		bytesUp   int64
 		bytesDown int64
+		startTime = time.Now()
 	)
+
+	defer func() {
+		total := bytesUp + bytesDown
+		rchanQueue <- Info{
+			Address:    address,
+			Bytes:      total,
+			Unix:       time.Now().Unix(),
+			RepeatNums: 1,
+			SessionID:  sid,
+		}
+		log.Printf("[流量统计] %s | 上行: %d | 下行: %d | 总流量: %d | 耗时=%v",
+			sid, bytesUp, bytesDown, total, time.Since(startTime))
+	}()
 
 	errc := make(chan error, 2)
 
@@ -162,29 +184,24 @@ func Transport1(rw1, rw2 io.ReadWriter, address string, sid string) error {
 		bytesUp = n
 		errc <- err
 	}()
+
 	go func() {
 		n, err := io.CopyBuffer(rw1, rw2, bufpool.Get(bufferSize))
 		bytesDown = n
 		errc <- err
 	}()
 
-	err1 := <-errc
-	err2 := <-errc
-
-	// 通过队列发送到RChan
-	total := bytesUp + bytesDown
-	rchanQueue <- Info{
-		Address:    address,
-		Bytes:      total,
-		Unix:       time.Now().Unix(),
-		RepeatNums: 1,
+	var errCount int
+	for i := 0; i < 2; i++ {
+		if err := <-errc; err != nil {
+			if err != io.EOF {
+				errCount++
+			}
+		}
 	}
 
-	if err1 != nil && err1 != io.EOF {
-		return err1
-	}
-	if err2 != nil && err2 != io.EOF {
-		return err2
+	if errCount > 0 {
+		return io.ErrUnexpectedEOF
 	}
 	return nil
 }
@@ -204,10 +221,33 @@ func CopyBuffer1(dst io.Writer, src io.Reader, bufSize int, address string, sid 
 	return err
 }
 
+// CopyBufferWithStats 带统计的拷贝实现
+func CopyBufferWithStats(dst io.Writer, src io.Reader, bufSize int, address, sid string) error {
+	buf := bufpool.Get(bufSize)
+	defer bufpool.Put(buf)
+
+	startTime := time.Now()
+	bytes, err := io.CopyBuffer(dst, src, buf)
+
+	rchanQueue <- Info{
+		Address:    address,
+		Bytes:      bytes,
+		Unix:       time.Now().Unix(),
+		RepeatNums: 1,
+		SessionID:  sid,
+	}
+
+	log.Printf("[流量统计] %s | 传输量=%d | 耗时=%v", sid, bytes, time.Since(startTime))
+	return err
+}
+
+
+
 type bufferReaderConn struct {
 	net.Conn
 	br *bufio.Reader
 }
+
 
 func NewBufferReaderConn(conn net.Conn, br *bufio.Reader) net.Conn {
 	return &bufferReaderConn{
