@@ -284,6 +284,7 @@ func (h *httpHandler) handleRequest(ctx context.Context, conn net.Conn, req *htt
 	log.WithFields(map[string]any{
 		"duration": time.Since(start), // 使用外部作用域的 start 变量
 		"Domain": domain, // domain
+		"localPort": localPort, // domain
 	}).Infof("%s >-< %s", conn.RemoteAddr(), addr)
 
 	return nil
