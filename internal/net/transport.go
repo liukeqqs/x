@@ -1,16 +1,15 @@
-// net包完整代码（修正strings包导入和日志调用）
+// net包完整代码
 package net
 
 import (
 	"bufio"
+	"github.com/liukeqqs/core/common/bufpool"
 	"io"
 	"log"
 	"net"
-	"strings" // 添加strings包导入
+	"strings"
 	"sync"
 	"time"
-
-	"github.com/liukeqqs/core/common/bufpool"
 )
 
 const (

@@ -132,7 +132,7 @@ func (h *ssHandler) Handle(ctx context.Context, conn net.Conn, opts ...handler.H
 	// 检查是否有重复请求
 	requestMutex.Lock()
 	if activeRequests[dstAddr] {
-		log.Debugf("检测到重复请求，已过滤: %s (ReqID: %s)", dstAddr, reqID)
+		log.Printf("检测到重复请求，已过滤: %s (ReqID: %s)", dstAddr, reqID)
 		requestMutex.Unlock()
 		return nil
 	}
