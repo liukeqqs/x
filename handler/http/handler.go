@@ -151,31 +151,13 @@ func (h *httpHandler) handleRequest(ctx context.Context, conn net.Conn, req *htt
 	}
 	req.Header.Del("X-Gost-Target")
 
-	// 提取域名（如果是IP:端口格式，则只取IP部分）
-	domain, _, err := net.SplitHostPort(req.Host)
-	if err != nil {
-		// 如果解析失败，可能是纯域名或IP
-		domain = req.Host
-	}
-
-	// 尝试反向解析IP到域名
-	if ip := net.ParseIP(domain); ip != nil {
-		hosts, err := net.LookupAddr(domain)
-		if err == nil && len(hosts) > 0 {
-			domain = hosts[0]
-			// 移除可能的末尾点号
-			domain = strings.TrimSuffix(domain, ".")
-		}
-	}
-
 	addr := req.Host
 	if _, port, _ := net.SplitHostPort(addr); port == "" {
 		addr = net.JoinHostPort(addr, "80")
 	}
 
 	fields := map[string]any{
-		"dst":    addr,
-		"domain": domain, // 使用解析后的域名
+		"dst": addr,
 	}
 	if u, _, _ := h.basicProxyAuth(req.Header.Get("Proxy-Authorization"), log); u != "" {
 		fields["user"] = u
@@ -186,7 +168,7 @@ func (h *httpHandler) handleRequest(ctx context.Context, conn net.Conn, req *htt
 		dump, _ := httputil.DumpRequest(req, false)
 		log.Trace(string(dump))
 	}
-	log.Debugf("%s >> %s (domain: %s)", conn.RemoteAddr(), addr, domain)
+	log.Debugf("%s >> %s (domain: %s)", conn.RemoteAddr(), addr, req.Host)
 
 	resp := &http.Response{
 		ProtoMajor: 1,
@@ -210,7 +192,7 @@ func (h *httpHandler) handleRequest(ctx context.Context, conn net.Conn, req *htt
 			dump, _ := httputil.DumpResponse(resp, false)
 			log.Trace(string(dump))
 		}
-		log.Debug("bypass: ", addr, " (domain: ", domain, ")")
+		log.Debug("bypass: ", addr, " (domain: ", req.Host, ")")
 
 		return resp.Write(conn)
 	}
@@ -286,11 +268,11 @@ func (h *httpHandler) handleRequest(ctx context.Context, conn net.Conn, req *htt
 	}
 
 	start := time.Now()
-	log.Infof("%s <-> %s (domain: %s)", conn.RemoteAddr(), addr, domain)
+	log.Infof("%s <-> %s (domain: %s)", conn.RemoteAddr(), addr, req.Host)
 	netpkg.Transport(rw, cc)
 	log.WithFields(map[string]any{
 		"duration": time.Since(start),
-	}).Infof("%s >-< %s (domain: %s)", conn.RemoteAddr(), addr, domain)
+	}).Infof("%s >-< %s (domain: %s)", conn.RemoteAddr(), addr, req.Host)
 
 	return nil
 }
