@@ -1,10 +1,13 @@
-// ss包代码 - 修正版
+// ss包完整代码
 package ss
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"io"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/go-gost/gosocks5"
@@ -21,6 +24,12 @@ import (
 func init() {
 	registry.HandlerRegistry().Register("ss", NewHandler)
 }
+
+// 新增请求缓存，防止重复请求
+var (
+	activeRequests = make(map[string]bool) // 记录活跃的请求
+	requestMutex   sync.Mutex
+)
 
 type ssHandler struct {
 	cipher  core.Cipher
@@ -39,6 +48,13 @@ func NewHandler(opts ...handler.Option) handler.Handler {
 	return &ssHandler{
 		options: options,
 	}
+}
+
+// 生成唯一请求ID
+func generateRequestID() string {
+	b := make([]byte, 8)
+	rand.Read(b)
+	return hex.EncodeToString(b)
 }
 
 func (h *ssHandler) Init(md md.Metadata) (err error) {
@@ -91,7 +107,9 @@ func (h *ssHandler) Handle(ctx context.Context, conn net.Conn, opts ...handler.H
 	}
 
 	if h.md.readTimeout > 0 {
+		// 设置读取超时，但在传输开始前取消
 		conn.SetReadDeadline(time.Now().Add(h.md.readTimeout))
+		defer conn.SetReadDeadline(time.Time{}) // 取消超时设置
 	}
 
 	addr := &gosocks5.Addr{}
@@ -107,23 +125,39 @@ func (h *ssHandler) Handle(ctx context.Context, conn net.Conn, opts ...handler.H
 
 	log.Debugf("%s >> %s", conn.RemoteAddr(), addr)
 
-	// 记录可能的bypass情况
-	if h.bypass && h.options.Bypass.Contains(ctx, "tcp", addr.String()) {
-		log.Debug("bypass: ", addr.String())
+	// 生成唯一请求ID
+	reqID := generateRequestID()
+	dstAddr := addr.String()
 
-		// 记录被bypass的请求流量
-		sid := string(ctxvalue.SidFromContext(ctx))
-		netpkg.RecordBypassTraffic(addr.String(), sid, conn.LocalAddr())
+	// 检查是否有重复请求
+	requestMutex.Lock()
+	if activeRequests[dstAddr] {
+		log.Printf("检测到重复请求，已过滤: %s (ReqID: %s)", dstAddr, reqID)
+		requestMutex.Unlock()
+		return nil
+	}
+	activeRequests[dstAddr] = true
+	requestMutex.Unlock()
 
+	// 请求处理完成后从活跃请求中移除
+	defer func() {
+		requestMutex.Lock()
+		delete(activeRequests, dstAddr)
+		requestMutex.Unlock()
+	}()
+
+	if h.bypass && h.options.Bypass.Contains(ctx, "tcp", dstAddr) {
+		log.Debug("bypass: ", dstAddr)
+		netpkg.RecordBypassTraffic(dstAddr, string(ctxvalue.SidFromContext(ctx))+"|"+reqID, conn.LocalAddr())
 		return nil
 	}
 
 	switch h.md.hash {
 	case "host":
-		ctx = ctxvalue.ContextWithHash(ctx, &ctxvalue.Hash{Source: addr.String()})
+		ctx = ctxvalue.ContextWithHash(ctx, &ctxvalue.Hash{Source: dstAddr})
 	}
 
-	cc, err := h.router.Dial(ctx, "tcp", addr.String())
+	cc, err := h.router.Dial(ctx, "tcp", dstAddr)
 	if err != nil {
 		return err
 	}
@@ -135,21 +169,21 @@ func (h *ssHandler) Handle(ctx context.Context, conn net.Conn, opts ...handler.H
 		localPort = tcpAddr.Port
 	}
 	t := time.Now()
-	log.Infof("%s <-> %s", conn.RemoteAddr(), addr)
+	log.Infof("%s <-> %s (ReqID: %s)", conn.RemoteAddr(), dstAddr, reqID)
 
 	// 使用 TransportWithStats 替代 Transport1
 	err = netpkg.TransportWithStats(
 		conn,        // 客户端连接
 		cc,          // 目标服务器连接
-		addr.String(), // 目标地址（如 example.com:443）
-		string(ctxvalue.SidFromContext(ctx)), // 会话ID
+		dstAddr,     // 目标地址（如 example.com:443）
+		string(ctxvalue.SidFromContext(ctx))+"|"+reqID, // 会话ID + 请求ID
 		localPort,   // 代理本地端口（如 1080）
 	)
 
 	log.WithFields(map[string]any{
 		"duration": time.Since(t),
-	})
-	log.Infof("%s >-< %s", conn.RemoteAddr(), addr)
+		"req_id":   reqID,
+	}).Infof("%s >-< %s", conn.RemoteAddr(), dstAddr)
 
 	return err // 返回实际的错误，而不是总是nil
 }
