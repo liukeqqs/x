@@ -13,27 +13,25 @@ import (
 
 const (
 	bufferSize        = 64 * 1024
-	maxQueueSize      = 100000
-	retryInterval     = 100 * time.Millisecond
-	flushInterval     = 500 * time.Millisecond
-	maxBatchSize      = 100
-	reportChannelSize = 10000
-	queueWorkers      = 20
+	maxQueueSize      = 300000
+	retryInterval     = 50 * time.Millisecond
+	flushInterval     = 200 * time.Millisecond
+	maxBatchSize      = 500
+	reportChannelSize = 50000
+	queueWorkers      = 50
 )
 
 var (
-	RChan      = make(chan Info, 5120)
+	RChan      = make(chan Info, 100000)
 	rchanQueue = make(chan Info, maxQueueSize)
 	queueOnce  sync.Once
 	reportChan = make(chan Info, reportChannelSize)
 
-	// 队列监控原子变量
 	pendingQueueCount  int64
 	pendingQueueBytes  int64
 	pendingReportCount int64
-
-	// 新增流量统计原子变量
 	totalReportedBytes int64
+	totalCapturedBytes int64
 )
 
 type Info struct {
@@ -48,35 +46,33 @@ type Info struct {
 
 func init() {
 	queueOnce.Do(func() {
-		// 启动队列处理器
 		for i := 0; i < queueWorkers; i++ {
 			go processRChanQueue()
 		}
-		// 启动批量上报处理器
 		go batchReportStats()
-		// 启动队列监控
 		go monitorQueueStats()
 	})
 }
 
-// 打印队列状态
 func logQueueStats() {
 	qCount := atomic.LoadInt64(&pendingQueueCount)
 	qBytes := atomic.LoadInt64(&pendingQueueBytes)
 	rCount := atomic.LoadInt64(&pendingReportCount)
-	total := atomic.LoadInt64(&totalReportedBytes)
+	totalReported := atomic.LoadInt64(&totalReportedBytes)
+	totalCaptured := atomic.LoadInt64(&totalCapturedBytes)
 
-	log.Printf("[流量队列监控] 待上传请求:%d 待上传流量:%.2f MB 批量队列积压:%d 已上报总量:%.2f MB",
+	log.Printf("[流量监控] 待传请求:%d 待传流量:%.2fMB 批量积压:%d 已上报:%.2fMB 总捕获:%.2fMB RChan:%d/%d",
 		qCount,
 		float64(qBytes)/(1024*1024),
 		rCount,
-		float64(total)/(1024*1024),
+		float64(totalReported)/(1024*1024),
+		float64(totalCaptured)/(1024*1024),
+		len(RChan), cap(RChan),
 	)
 }
 
-// 队列监控协程
 func monitorQueueStats() {
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 
 	for range ticker.C {
@@ -84,42 +80,40 @@ func monitorQueueStats() {
 	}
 }
 
-// 修复1: 正确处理队列处理逻辑
 func processRChanQueue() {
 	for info := range rchanQueue {
-		// 减少积压计数
 		atomic.AddInt64(&pendingQueueCount, -1)
 		atomic.AddInt64(&pendingQueueBytes, -info.Bytes)
 
 		retryCount := 0
-		maxRetries := 25
+		maxRetries := 30
 
 		for {
 			select {
 			case RChan <- info:
-				// 修复2: 增加已上报总量统计
 				atomic.AddInt64(&totalReportedBytes, info.Bytes)
 				goto NEXT
 			default:
 				retryCount++
-				if retryCount%10 == 0 {
-					log.Printf("队列阻塞告警: 已重试%d次 积压流量:%.2f MB",
+				if retryCount%5 == 0 {
+					log.Printf("队列阻塞: 重试%d次 积压:%.2fMB RChan:%d/%d",
 						retryCount,
 						float64(atomic.LoadInt64(&pendingQueueBytes))/(1024*1024),
+						len(RChan), cap(RChan),
 					)
 				}
 
-				// 指数退避
-				delay := time.Duration(retryCount) * retryInterval
-				if delay > 3*time.Second {
-					delay = 3 * time.Second
+				delay := time.Duration(retryCount*10) * time.Millisecond
+				if delay > 1*time.Second {
+					delay = 1 * time.Second
 				}
 				time.Sleep(delay)
 
 				if retryCount > maxRetries {
-					log.Printf("致命错误: 无法上报流量数据! 地址:%s 流量:%.2f MB",
+					log.Printf("流量丢弃: %s 流量:%.2fMB 积压:%d",
 						info.Address,
 						float64(info.Bytes)/(1024*1024),
+						atomic.LoadInt64(&pendingQueueCount),
 					)
 					goto NEXT
 				}
@@ -129,7 +123,6 @@ func processRChanQueue() {
 	}
 }
 
-// 批量上报处理器
 func batchReportStats() {
 	batch := make([]Info, 0, maxBatchSize)
 	ticker := time.NewTicker(flushInterval)
@@ -138,9 +131,7 @@ func batchReportStats() {
 	for {
 		select {
 		case info := <-reportChan:
-			// 减少批量队列计数
 			atomic.AddInt64(&pendingReportCount, -1)
-
 			batch = append(batch, info)
 			if len(batch) >= maxBatchSize {
 				flushBatch(batch)
@@ -155,26 +146,25 @@ func batchReportStats() {
 	}
 }
 
-// 批量刷新
 func flushBatch(batch []Info) {
 	for _, info := range batch {
 		select {
 		case rchanQueue <- info:
-			// 成功加入队列时增加积压计数
 			atomic.AddInt64(&pendingQueueCount, 1)
 			atomic.AddInt64(&pendingQueueBytes, info.Bytes)
 		default:
-			log.Printf("严重警告: 流量数据丢失! 地址:%s 流量:%.2f MB",
-				info.Address,
-				float64(info.Bytes)/(1024*1024),
-			)
+			select {
+			case RChan <- info:
+				atomic.AddInt64(&totalReportedBytes, info.Bytes)
+			default:
+				log.Printf("严重: 流量丢失! %s %.2fMB",
+					info.Address, float64(info.Bytes)/(1024*1024))
+			}
 		}
 	}
 }
 
-// 修复3: 重写立即上报函数
 func reportStatsImmediately(info Info) {
-	// 加入队列前增加积压计数
 	atomic.AddInt64(&pendingQueueCount, 1)
 	atomic.AddInt64(&pendingQueueBytes, info.Bytes)
 
@@ -182,38 +172,14 @@ func reportStatsImmediately(info Info) {
 	case rchanQueue <- info:
 		return
 	default:
-		// 队列满时直接尝试发送到RChan
-		retryCount := 0
-		maxRetries := 10
-
-		for {
-			select {
-			case RChan <- info:
-				atomic.AddInt64(&totalReportedBytes, info.Bytes)
-				return
-			default:
-				retryCount++
-				if retryCount > maxRetries {
-					// 减少积压计数（因为最终丢弃）
-					atomic.AddInt64(&pendingQueueCount, -1)
-					atomic.AddInt64(&pendingQueueBytes, -info.Bytes)
-
-					log.Printf("致命错误: 流量数据丢弃! 重试%d次 地址:%s 流量:%.2f MB 当前积压:%d条",
-						retryCount,
-						info.Address,
-						float64(info.Bytes)/(1024*1024),
-						atomic.LoadInt64(&pendingQueueCount),
-					)
-					return
-				}
-
-				delay := time.Duration(retryCount) * retryInterval
-				if delay > 1*time.Second {
-					delay = 1 * time.Second
-				}
-
-				time.Sleep(delay)
-			}
+		select {
+		case RChan <- info:
+			atomic.AddInt64(&totalReportedBytes, info.Bytes)
+			return
+		default:
+			log.Printf("紧急同步上报: %s %.2fMB", info.Address, float64(info.Bytes)/(1024*1024))
+			RChan <- info
+			atomic.AddInt64(&totalReportedBytes, info.Bytes)
 		}
 	}
 }
@@ -276,87 +242,90 @@ func CopyBuffer(dst io.Writer, src io.Reader, bufSize int) error {
 	return err
 }
 
-// 修复4: 重写流量统计传输函数
 func TransportWithStats(rw1, rw2 io.ReadWriter, domain, sid string, localPort int) error {
 	startTime := time.Now()
 
-	// 创建流量计数器 - 修复方向问题
-	counter1 := NewTrafficCounter(rw1, rw1) // 上行：从客户端读取，向服务器写入
-	counter2 := NewTrafficCounter(rw2, rw2) // 下行：从服务器读取，向客户端写入
+	counter1 := NewTrafficCounter(rw1, rw1)
+	counter2 := NewTrafficCounter(rw2, rw2)
 
-	errc := make(chan error, 2)
+	errChan := make(chan error, 2)
+	done := make(chan struct{})
 
-	// 上行：客户端 -> 服务器
+	var totalBytes int64
+
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				log.Printf("上行协程异常: %v", r)
+				log.Printf("上行PANIC: %v SID:%s", r, sid)
 			}
 		}()
 
-		// 修复5: 使用正确的复制方向
 		_, err := io.Copy(counter2, counter1)
-		errc <- err
+		errChan <- err
 	}()
 
-	// 下行：服务器 -> 客户端
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				log.Printf("下行协程异常: %v", r)
+				log.Printf("下行PANIC: %v SID:%s", r, sid)
 			}
 		}()
 
-		// 修复6: 使用正确的复制方向
 		_, err := io.Copy(counter1, counter2)
-		errc <- err
+		errChan <- err
 	}()
 
-	var errCount int
-	for i := 0; i < 2; i++ {
-		if err := <-errc; err != nil {
-			// 修复7: 不打印所有错误，只记录非EOF错误
-			if err != io.EOF {
-				log.Printf("传输错误: %v (SID: %s)", err, sid)
-				errCount++
+	go func() {
+		defer close(done)
+
+		var errCount int
+		timeout := time.After(30 * time.Second)
+
+		for i := 0; i < 2; i++ {
+			select {
+			case err := <-errChan:
+				if err != nil && err != io.EOF {
+					log.Printf("传输错误: %v SID:%s", err, sid)
+					errCount++
+				}
+			case <-timeout:
+				log.Printf("流量上报超时 SID:%s", sid)
 			}
 		}
-	}
 
-	// 修复8: 正确获取上下行流量
-	bytesUp := counter1.BytesRead()      // 从客户端读取的字节数（上行）
-	bytesDown := counter2.BytesRead()    // 从服务器读取的字节数（下行）
-	totalBytes := bytesUp + bytesDown
-	duration := time.Since(startTime)
+		bytesUp := counter1.BytesRead()
+		bytesDown := counter2.BytesRead()
+		totalBytes = bytesUp + bytesDown
+		atomic.AddInt64(&totalCapturedBytes, totalBytes)
+		duration := time.Since(startTime)
 
-	// 修复9: 添加详细日志帮助诊断
-	log.Printf("[流量详情] SID:%s 上行:%d 下行:%d 总计:%d 耗时:%v",
-		sid, bytesUp, bytesDown, totalBytes, duration)
+		log.Printf("[流量] SID:%s 上行:%d 下行:%d 总计:%d 耗时:%v",
+			sid, bytesUp, bytesDown, totalBytes, duration)
 
-	// 修复10: 确保即使有错误也上报流量
-	info := Info{
-		Address:    domain,
-		LocalPort:  localPort,
-		Bytes:      totalBytes,
-		Unix:       time.Now().Unix(),
-		RepeatNums: 1,
-		SessionID:  sid,
-		Domain:     domain,
-	}
+		info := Info{
+			Address:    domain,
+			LocalPort:  localPort,
+			Bytes:      totalBytes,
+			Unix:       time.Now().Unix(),
+			RepeatNums: 1,
+			SessionID:  sid,
+			Domain:     domain,
+		}
 
-	// 使用批量上报通道避免阻塞
+		select {
+		case reportChan <- info:
+			atomic.AddInt64(&pendingReportCount, 1)
+		default:
+			reportStatsImmediately(info)
+		}
+	}()
+
 	select {
-	case reportChan <- info:
-		// 增加批量队列计数
-		atomic.AddInt64(&pendingReportCount, 1)
-	default:
-		// 如果批量队列满，直接上报
-		reportStatsImmediately(info)
+	case <-done:
+	case <-time.After(5 * time.Second):
+		log.Printf("警告: 流量上报未完成 SID:%s", sid)
 	}
 
-	if errCount > 0 {
-		return io.ErrClosedPipe
-	}
 	return nil
 }
 
@@ -398,7 +367,6 @@ func Transport1(rw1, rw2 io.ReadWriter, address string, sid string) error {
 		SessionID:  sid,
 	}
 
-	// 使用批量上报通道避免阻塞
 	select {
 	case reportChan <- info:
 		atomic.AddInt64(&pendingReportCount, 1)
@@ -415,7 +383,32 @@ func Transport1(rw1, rw2 io.ReadWriter, address string, sid string) error {
 	return nil
 }
 
-// 修复11: 简化拷贝函数
+func CopyBuffer1(dst io.Writer, src io.Reader, bufSize int, address string, sid string) error {
+	buf := bufpool.Get(bufSize)
+	defer bufpool.Put(buf)
+
+	counter := NewTrafficCounter(src, dst)
+
+	bytes, err := io.CopyBuffer(counter, counter, buf)
+	log.Printf("[消耗流量：]--%s------%d------%s", address, bytes, sid)
+
+	info := Info{
+		Address:    address,
+		Bytes:      counter.BytesWritten(),
+		Unix:       time.Now().Unix(),
+		RepeatNums: 1,
+	}
+
+	select {
+	case reportChan <- info:
+		atomic.AddInt64(&pendingReportCount, 1)
+	default:
+		reportStatsImmediately(info)
+	}
+
+	return err
+}
+
 func CopyBufferWithStats(dst io.Writer, src io.Reader, bufSize int, address, sid string) error {
 	buf := bufpool.Get(bufSize)
 	defer bufpool.Put(buf)
@@ -433,7 +426,6 @@ func CopyBufferWithStats(dst io.Writer, src io.Reader, bufSize int, address, sid
 		SessionID:  sid,
 	}
 
-	// 使用批量上报通道避免阻塞
 	select {
 	case reportChan <- info:
 		atomic.AddInt64(&pendingReportCount, 1)
