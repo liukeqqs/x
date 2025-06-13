@@ -18,16 +18,10 @@ var (
 )
 
 type Info struct {
-	Address    string `json:"address"`
-	LocalPort  int    `json:"localport"`
-	Bytes      int64  `json:"bytes"`
-	Unix       int64  `json:"unix"`
-	RepeatNums int64  `json:"repeatnums"`
-	SessionID  string `json:"sid,omitempty"`   // 新增会话ID
-	Domain     string `json:"domain,omitempty"`// 新增域名
-	RequestID  string `json:"req_id,omitempty"`// 新增请求ID
+	Address string `json:"address"`
+	Bytes   []byte `json:"bytes"`
+	Sid     string `json:"sid"`
 }
-
 
 func Transport(rw1, rw2 io.ReadWriter) error {
 	errc := make(chan error, 1)
