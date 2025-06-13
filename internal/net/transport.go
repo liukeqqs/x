@@ -238,13 +238,8 @@ func CopyBuffer(dst io.Writer, src io.Reader, bufSize int) error {
 	buf := bufpool.Get(bufSize)
 	defer bufpool.Put(buf)
 
-	bytes, err := io.CopyBuffer(dst, src, buf)
-	if err != nil {
-		return err
-	}
-	// 修正 log.Printf 的调用，使用正确的占位符和参数
-	log.Printf("[HTTP消耗流量：]--%d", bytes)
-	return nil
+	_, err := io.CopyBuffer(dst, src, buf)
+	return err
 }
 
 func TransportWithStats(rw1, rw2 io.ReadWriter, domain, sid string, localPort int) error {
