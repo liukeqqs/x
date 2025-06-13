@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"hash/crc32"
-	"io"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -257,49 +256,14 @@ func (h *httpHandler) handleRequest(ctx context.Context, conn net.Conn, req *htt
 		rw = stats_wrapper.WrapReadWriter(rw, pstats)
 	}
 
-	start = time.Now()
+	start := time.Now()
 	log.Infof("%s <-> %s", conn.RemoteAddr(), addr)
-
-	// 自定义函数来统计上下行流量
-	upBytes, downBytes := transportAndCount(rw, cc)
-
+	netpkg.Transport(rw, cc)
 	log.WithFields(map[string]any{
 		"duration": time.Since(start),
-		"upBytes":  upBytes,
-		"downBytes": downBytes,
-	}).Infof("%s >-< %s, Up: %d bytes, Down: %d bytes", conn.RemoteAddr(), addr, upBytes, downBytes)
+	}).Infof("%s >-< %s", conn.RemoteAddr(), addr)
 
 	return nil
-}
-
-// transportAndCount 自定义函数来统计上下行流量
-func transportAndCount(src, dst net.Conn) (int64, int64) {
-	var upBytes, downBytes int64
-	var wg sync.WaitGroup
-	wg.Add(2)
-
-	// 统计上行流量
-	go func() {
-		defer wg.Done()
-		var err error
-		upBytes, err = io.Copy(dst, src)
-		if err != nil {
-			log.Printf("数据传输错误 (src -> dst): %v", err)
-		}
-	}()
-
-	// 统计下行流量
-	go func() {
-		defer wg.Done()
-		var err error
-		downBytes, err = io.Copy(src, dst)
-		if err != nil {
-			log.Printf("数据传输错误 (dst -> src): %v", err)
-		}
-	}()
-
-	wg.Wait()
-	return upBytes, downBytes
 }
 
 func (h *httpHandler) decodeServerName(s string) (string, error) {
