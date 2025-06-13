@@ -1,7 +1,6 @@
 package net
 
 import (
-	"io"
 	"log"
 	"net"
 	"sync"
