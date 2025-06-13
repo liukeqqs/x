@@ -117,10 +117,10 @@ func (h *ssHandler) Handle(ctx context.Context, conn net.Conn, opts ...handler.H
 	}
 	defer cc.Close()
 	// 获取本地端口
-	localPort := 0
+/* 	localPort := 0
 	if tcpAddr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
 		localPort = tcpAddr.Port
-	}
+	} */
 	t := time.Now()
 	log.Infof("%s <-> %s", conn.RemoteAddr(), addr)
 	 netpkg.Transport(conn, cc)

@@ -67,10 +67,10 @@ func (h *socks5Handler) handleConnect(ctx context.Context, conn net.Conn, networ
 		rw = stats_wrapper.WrapReadWriter(rw, pstats)
 	}
 	// 获取本地端口
-	localPort := 0
+/* 	localPort := 0
 	if tcpAddr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
 		localPort = tcpAddr.Port
-	}
+	} */
 	t := time.Now()
 	log.Infof("%s <-> %s", conn.RemoteAddr(), address)
 	netpkg.Transport(conn, cc)
