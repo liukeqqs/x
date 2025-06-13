@@ -256,8 +256,7 @@ func (h *httpHandler) handleRequest(ctx context.Context, conn net.Conn, req *htt
 		rw = stats_wrapper.WrapReadWriter(rw, pstats)
 	}
 
-	// 移除重复的 start 变量声明
-	// start := time.Now() // 删除这行，避免变量作用域问题
+	start = time.Now()
 
 	// 获取并记录域名信息
 	domain := req.Host
@@ -268,11 +267,11 @@ func (h *httpHandler) handleRequest(ctx context.Context, conn net.Conn, req *htt
 		domain = host
 	}
 
-	log.Infof("%s <-【Transport】> %s (Domain: %s)", conn.RemoteAddr(), addr, domain)
+	log.Infof("%s <-】】】】】【Transport】【【【【> %s (Domain: %s)", conn.RemoteAddr(), addr, domain)
 
 	netpkg.Transport(rw, cc)
 	log.WithFields(map[string]any{
-		"duration": time.Since(start), // 使用外部作用域的 start 变量
+		"duration": time.Since(start),
 	}).Infof("%s >-< %s", conn.RemoteAddr(), addr)
 
 	return nil
