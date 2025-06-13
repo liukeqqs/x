@@ -1,24 +1,25 @@
 package net
 
 import (
+	"bufio"
+	"github.com/liukeqqs/core/common/bufpool"
 	"io"
 	"log"
 	"net"
 	"sync"
-	"sync/atomic"
 	"time"
-
-	"github.com/liukeqqs/core/common/bufpool"
 )
 
-const bufferSize = 64 * 1024
+const (
+	bufferSize = 64 * 1024
+)
 
 var (
-	TrafficChan = make(chan *TrafficInfo, 1024)
-	RChan       = make(chan Info, 5120)
+	TrafficChan = make(chan *TrafficInfo, 1024) // 新通道
+	RChan = make(chan Info, 5120)
 )
 
-// TrafficInfo 流量统计结构
+// TrafficInfo 新流量统计结构
 type TrafficInfo struct {
 	Domain    string `json:"domain"`
 	LocalPort int    `json:"localport"`
@@ -29,7 +30,7 @@ type TrafficInfo struct {
 	EndTime   int64  `json:"end"`
 }
 
-// Info 旧流量统计结构
+// Info 旧流量统计结构（假设已存在）
 type Info struct {
 	Address    string `json:"address"`
 	LocalPort  int    `json:"localport"`
@@ -38,27 +39,32 @@ type Info struct {
 	RepeatNums int64  `json:"repeatnums"`
 }
 
-// trafficConn 带流量统计的连接包装器
-type trafficConn struct {
-	net.Conn
-	upCounter   *int64 // 上行计数器
-	downCounter *int64 // 下行计数器
+func Transport(rw1, rw2 io.ReadWriter) error {
+	errc := make(chan error, 1)
+	go func() {
+		errc <- CopyBuffer(rw1, rw2, bufferSize)
+	}()
+
+	go func() {
+		errc <- CopyBuffer(rw2, rw1, bufferSize)
+	}()
+
+	if err := <-errc; err != nil && err != io.EOF {
+		return err
+	}
+	return nil
 }
 
-func (c *trafficConn) Read(b []byte) (n int, err error) {
-	n, err = c.Conn.Read(b)
-	atomic.AddInt64(c.downCounter, int64(n))
-	return
-}
+func CopyBuffer(dst io.Writer, src io.Reader, bufSize int) error {
+	buf := bufpool.Get(bufSize)
 
-func (c *trafficConn) Write(b []byte) (n int, err error) {
-	n, err = c.Conn.Write(b)
-	atomic.AddInt64(c.upCounter, int64(n))
-	return
-}
+	defer bufpool.Put(buf)
 
-// TransportWithStats 精确流量统计的传输函数
-func TransportWithStats(conn1, conn2 net.Conn, domain, sid string, localPort int) error {
+	_, err := io.CopyBuffer(dst, src, buf)
+	return err
+}
+// TransportWithStats 带流量统计的传输
+func TransportWithStats(rw1, rw2 io.ReadWriter, domain, sid string, localPort int) error {
 	info := &TrafficInfo{
 		Domain:    domain,
 		LocalPort: localPort,
@@ -66,44 +72,36 @@ func TransportWithStats(conn1, conn2 net.Conn, domain, sid string, localPort int
 		StartTime: time.Now().Unix(),
 	}
 
-	// 使用原子计数器确保并发安全
-	var upCounter, downCounter int64
-
-	// 包装连接以进行流量统计
-	tc1 := &trafficConn{
-		Conn:        conn1,
-		upCounter:   &upCounter,
-		downCounter: &downCounter,
-	}
-
-	tc2 := &trafficConn{
-		Conn:        conn2,
-		upCounter:   &upCounter,
-		downCounter: &downCounter,
-	}
-
-	// 使用同步等待确保双向传输完成
+	// 使用同步等待确保两个方向都完成
 	var wg sync.WaitGroup
 	wg.Add(2)
 
-	// 启动双向传输
+	// 上行流量统计 (rw1 -> rw2)
 	go func() {
 		defer wg.Done()
-		copyStream(tc1, tc2)
+		info.BytesUp, _ = io.Copy(rw2, rw1)
+		// 尝试关闭写方向
+		if c, ok := rw2.(interface{ CloseWrite() error }); ok {
+			c.CloseWrite()
+		}
 	}()
 
+	// 下行流量统计 (rw2 -> rw1)
 	go func() {
 		defer wg.Done()
-		copyStream(tc2, tc1)
+		info.BytesDown, _ = io.Copy(rw1, rw2)
+		// 尝试关闭写方向
+		if c, ok := rw1.(interface{ CloseWrite() error }); ok {
+			c.CloseWrite()
+		}
 	}()
 
+	// 等待双向传输完成
 	wg.Wait()
 	info.EndTime = time.Now().Unix()
-	info.BytesUp = atomic.LoadInt64(&upCounter)
-	info.BytesDown = atomic.LoadInt64(&downCounter)
-	totalBytes := info.BytesUp + info.BytesDown
 
-	// 发送统计信息
+	// 发送统计信息（确保只发送一次）
+	totalBytes := info.BytesUp + info.BytesDown
 	TrafficChan <- info
 	RChan <- Info{
 		Address:    info.Domain,
@@ -114,47 +112,75 @@ func TransportWithStats(conn1, conn2 net.Conn, domain, sid string, localPort int
 	}
 
 	log.Printf(
-		"[精确流量] SessionID=%s | Domain=%s | 上行=%d | 下行=%d | 总流量=%d",
+		"[流量统计] SessionID=%s | Domain=%s | 上行=%d | 下行=%d | 总流量=%d",
 		info.SessionID,
 		info.Domain,
 		info.BytesUp,
 		info.BytesDown,
 		totalBytes,
 	)
-
 	return nil
 }
+func Transport1(rw1, rw2 io.ReadWriter, address string, sid string) error {
+    var (
+        bytesUp   int64 // 上行流量（rw1 → rw2）
+        bytesDown int64 // 下行流量（rw2 → rw1）
+    )
 
-// copyStream 精确的流复制函数
-func copyStream(dst, src net.Conn) {
-	buf := bufpool.Get(bufferSize)
+    errc := make(chan error, 1)
+    go func() {
+        n, err := io.CopyBuffer(rw2, rw1, bufpool.Get(bufferSize))
+        bytesUp = n
+        errc <- err
+    }()
+    go func() {
+        n, err := io.CopyBuffer(rw1, rw2, bufpool.Get(bufferSize))
+        bytesDown = n
+        errc <- err
+    }()
+
+    if err := <-errc; err != nil && err != io.EOF {
+        return err
+    }
+
+    // 只发送一次统计信息
+    RChan <- Info{
+        Address:    address,
+        Bytes:      bytesUp + bytesDown, // 总流量
+        Unix:       time.Now().Unix(),
+        RepeatNums: 1,
+    }
+    log.Printf("[流量统计] %s | 上行: %d | 下行: %d | 总流量: %d", sid, bytesUp, bytesDown, bytesUp+bytesDown)
+    return nil
+}
+
+
+func CopyBuffer1(dst io.Writer, src io.Reader, bufSize int, address string, sid string) error {
+	buf := bufpool.Get(bufSize)
 	defer bufpool.Put(buf)
+	bytes, err := io.CopyBuffer(dst, src, buf)
+	log.Printf("[消耗流量：]--%s------%s------%s", address, bytes, sid)
+	RChan <- Info{
+		Address:    address,
+		Bytes:      bytes,
+		Unix:       time.Now().Unix(),
+		RepeatNums: 1,
+	}
+	return err
+}
 
-	for {
-		// 设置读取超时防止永久阻塞
-		src.SetReadDeadline(time.Now().Add(30 * time.Second))
-		nr, err := src.Read(buf)
-		if nr > 0 {
-			// 设置写入超时
-			dst.SetWriteDeadline(time.Now().Add(30 * time.Second))
-			nw, err := dst.Write(buf[:nr])
-			if err != nil {
-				break
-			}
-			if nr != nw {
-				break
-			}
-		}
-		if err != nil {
-			break
-		}
-	}
+type bufferReaderConn struct {
+	net.Conn
+	br *bufio.Reader
+}
 
-	// 尝试半关闭连接
-	if tcpConn, ok := dst.(*net.TCPConn); ok {
-		tcpConn.CloseWrite()
+func NewBufferReaderConn(conn net.Conn, br *bufio.Reader) net.Conn {
+	return &bufferReaderConn{
+		Conn: conn,
+		br:   br,
 	}
-	if tcpConn, ok := src.(*net.TCPConn); ok {
-		tcpConn.CloseRead()
-	}
+}
+
+func (c *bufferReaderConn) Read(b []byte) (int, error) {
+	return c.br.Read(b)
 }
