@@ -13,52 +13,62 @@ import (
 
 const (
 	bufferSize        = 64 * 1024
-	maxQueueSize      = 100000      // 队列最大容量
-	retryInterval     = 100 * time.Millisecond // 重试间隔
-	flushInterval     = 500 * time.Millisecond // 批量上报间隔
-	maxBatchSize      = 100          // 批量上报最大条数
-	reportChannelSize = 10000        // 流量报告通道大小
+	maxQueueSize      = 100000
+	retryInterval     = 100 * time.Millisecond
+	flushInterval     = 500 * time.Millisecond
+	maxBatchSize      = 100
+	reportChannelSize = 10000
 )
 
 var (
 	RChan       = make(chan Info, 5120)
 	rchanQueue  = make(chan Info, maxQueueSize)
 	queueOnce   sync.Once
-	reportChan  = make(chan Info, reportChannelSize) // 新增流量报告通道
+	reportChan  = make(chan Info, reportChannelSize)
+	statsMutex  sync.Mutex
 )
 
-// Info 增强版流量统计结构
 type Info struct {
 	Address    string `json:"address"`
 	LocalPort  int    `json:"localport"`
 	Bytes      int64  `json:"bytes"`
 	Unix       int64  `json:"unix"`
 	RepeatNums int64  `json:"repeatnums"`
-	SessionID  string `json:"sid,omitempty"`   // 新增会话ID
-	Domain     string `json:"domain,omitempty"`// 新增域名
+	SessionID  string `json:"sid,omitempty"`
+	Domain     string `json:"domain,omitempty"`
 }
 
-// 初始化后台队列处理器
 func init() {
 	queueOnce.Do(func() {
 		go processRChanQueue()
-		go batchReportStats() // 新增批量上报协程
+		go batchReportStats()
+		go monitorQueueStatus() // 新增队列监控
 	})
 }
 
-// 可靠队列处理核心逻辑
+// 监控队列状态
+func monitorQueueStatus() {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		log.Printf("[队列状态] rchanQueue: %d/%d (%.1f%%) | reportChan: %d/%d (%.1f%%) | RChan: %d/%d (%.1f%%)",
+			len(rchanQueue), maxQueueSize, float64(len(rchanQueue))/float64(maxQueueSize)*100,
+			len(reportChan), reportChannelSize, float64(len(reportChan))/float64(reportChannelSize)*100,
+			len(RChan), 5120, float64(len(RChan))/5120*100)
+	}
+}
+
 func processRChanQueue() {
 	for info := range rchanQueue {
-		// 指数退避重试机制
 		retryDelay := retryInterval
 		for {
 			select {
 			case RChan <- info:
-				goto NEXT // 发送成功
+				goto NEXT
 			default:
 				log.Printf("队列阻塞，等待重试 (间隔 %v)", retryDelay)
 				time.Sleep(retryDelay)
-				// 动态调整重试间隔
 				retryDelay = time.Duration(1.5 * float64(retryDelay))
 				if retryDelay > 5*time.Second {
 					retryDelay = 5 * time.Second
@@ -69,7 +79,6 @@ func processRChanQueue() {
 	}
 }
 
-// 批量上报流量统计
 func batchReportStats() {
 	batch := make([]Info, 0, maxBatchSize)
 	ticker := time.NewTicker(flushInterval)
@@ -80,31 +89,26 @@ func batchReportStats() {
 		case info := <-reportChan:
 			batch = append(batch, info)
 			if len(batch) >= maxBatchSize {
-				// 达到批量大小，立即处理
 				if !flushBatchWithRetry(batch) {
-					// 如果批量处理失败，将数据逐一条目重新加入队列
 					for _, item := range batch {
 						reportChan <- item
 					}
 				}
-				batch = make([]Info, 0, maxBatchSize)
+				batch = batch[:0]
 			}
 		case <-ticker.C:
-			// 时间间隔到，处理当前批次
 			if len(batch) > 0 {
 				if !flushBatchWithRetry(batch) {
-					// 如果批量处理失败，将数据逐一条目重新加入队列
 					for _, item := range batch {
 						reportChan <- item
 					}
 				}
-				batch = make([]Info, 0, maxBatchSize)
+				batch = batch[:0]
 			}
 		}
 	}
 }
 
-// 带重试的批量处理
 func flushBatchWithRetry(batch []Info) bool {
 	maxRetries := 5
 	for attempt := 0; attempt < maxRetries; attempt++ {
@@ -112,9 +116,7 @@ func flushBatchWithRetry(batch []Info) bool {
 		for _, info := range batch {
 			select {
 			case rchanQueue <- info:
-				// 发送成功
 			default:
-				// 队列满，尝试失败
 				success = false
 				break
 			}
@@ -124,7 +126,6 @@ func flushBatchWithRetry(batch []Info) bool {
 			return true
 		}
 
-		// 指数退避
 		delay := time.Duration(1<<uint(attempt)) * retryInterval
 		log.Printf("批量处理失败，第 %d 次重试，等待 %v", attempt+1, delay)
 		time.Sleep(delay)
@@ -133,28 +134,23 @@ func flushBatchWithRetry(batch []Info) bool {
 	return false
 }
 
-// 立即上报流量统计，不经过批量处理
 func reportStatsImmediately(info Info) {
-	// 使用指数退避重试机制，确保数据不丢失
 	maxRetries := 10
 	for attempt := 0; attempt < maxRetries; attempt++ {
 		select {
 		case rchanQueue <- info:
-			// 发送成功
 			return
 		default:
-			// 队列满，等待后重试
 			delay := time.Duration(1<<uint(attempt)) * retryInterval
 			log.Printf("紧急上报队列阻塞，第 %d 次重试，等待 %v", attempt+1, delay)
 			time.Sleep(delay)
 		}
 	}
 
-	// 所有重试都失败，记录错误
 	log.Printf("警告: 流量统计信息上报失败，已重试 %d 次: %v", maxRetries, info)
 }
 
-// 流量统计包装器
+// 改进后的流量计数器
 type TrafficCounter struct {
 	reader     io.Reader
 	writer     io.Writer
@@ -162,7 +158,6 @@ type TrafficCounter struct {
 	bytesWrite int64
 }
 
-// 创建新的流量计数器
 func NewTrafficCounter(r io.Reader, w io.Writer) *TrafficCounter {
 	return &TrafficCounter{
 		reader: r,
@@ -170,63 +165,39 @@ func NewTrafficCounter(r io.Reader, w io.Writer) *TrafficCounter {
 	}
 }
 
-// 实现Reader接口
 func (tc *TrafficCounter) Read(p []byte) (n int, err error) {
 	n, err = tc.reader.Read(p)
 	atomic.AddInt64(&tc.bytesRead, int64(n))
 	return
 }
 
-// 实现Writer接口
 func (tc *TrafficCounter) Write(p []byte) (n int, err error) {
 	n, err = tc.writer.Write(p)
 	atomic.AddInt64(&tc.bytesWrite, int64(n))
 	return
 }
 
-// 获取读取的字节数
 func (tc *TrafficCounter) BytesRead() int64 {
 	return atomic.LoadInt64(&tc.bytesRead)
 }
 
-// 获取写入的字节数
 func (tc *TrafficCounter) BytesWritten() int64 {
 	return atomic.LoadInt64(&tc.bytesWrite)
 }
 
-func Transport(rw1, rw2 io.ReadWriter) error {
-	errc := make(chan error, 1)
-	go func() {
-		errc <- CopyBuffer(rw1, rw2, bufferSize)
-	}()
-
-	go func() {
-		errc <- CopyBuffer(rw2, rw1, bufferSize)
-	}()
-
-	if err := <-errc; err != nil && err != io.EOF {
-		return err
-	}
-	return nil
-}
-
-func CopyBuffer(dst io.Writer, src io.Reader, bufSize int) error {
-	buf := bufpool.Get(bufSize)
-	defer bufpool.Put(buf)
-
-	_, err := io.CopyBuffer(dst, src, buf)
-	return err
-}
-
-// TransportWithStats 新版可靠传输实现
+// 改进后的传输函数
 func TransportWithStats(rw1, rw2 io.ReadWriter, domain, sid string, localPort int) error {
 	var (
 		startTime = time.Now()
+		bytesUp   int64
+		bytesDown int64
 	)
 
-	// 创建流量计数器
-	counter1 := NewTrafficCounter(rw1, rw1)
-	counter2 := NewTrafficCounter(rw2, rw2)
+	// 创建独立的读写计数器
+	reader1 := NewTrafficCounter(rw1, nil)
+	writer1 := NewTrafficCounter(nil, rw1)
+	reader2 := NewTrafficCounter(rw2, nil)
+	writer2 := NewTrafficCounter(nil, rw2)
 
 	errc := make(chan error, 2)
 
@@ -237,7 +208,13 @@ func TransportWithStats(rw1, rw2 io.ReadWriter, domain, sid string, localPort in
 				log.Printf("上行协程异常: %v", r)
 			}
 		}()
-		_, err := io.Copy(counter2, counter1)
+
+		// 使用独立的缓冲区
+		buf := bufpool.Get(bufferSize)
+		defer bufpool.Put(buf)
+
+		n, err := io.CopyBuffer(writer2, reader1, buf)
+		atomic.StoreInt64(&bytesUp, n)
 		errc <- err
 	}()
 
@@ -248,11 +225,16 @@ func TransportWithStats(rw1, rw2 io.ReadWriter, domain, sid string, localPort in
 				log.Printf("下行协程异常: %v", r)
 			}
 		}()
-		_, err := io.Copy(counter1, counter2)
+
+		// 使用独立的缓冲区
+		buf := bufpool.Get(bufferSize)
+		defer bufpool.Put(buf)
+
+		n, err := io.CopyBuffer(writer1, reader2, buf)
+		atomic.StoreInt64(&bytesDown, n)
 		errc <- err
 	}()
 
-	// 错误处理增强
 	var errCount int
 	for i := 0; i < 2; i++ {
 		if err := <-errc; err != nil {
@@ -263,10 +245,8 @@ func TransportWithStats(rw1, rw2 io.ReadWriter, domain, sid string, localPort in
 		}
 	}
 
-	// 构建统计信息
-	bytesUp := counter1.BytesWritten()
-	bytesDown := counter2.BytesWritten()
-	totalBytes := bytesUp + bytesDown
+	// 获取最终统计
+	totalBytes := atomic.LoadInt64(&bytesUp) + atomic.LoadInt64(&bytesDown)
 	duration := time.Since(startTime)
 
 	info := Info{
@@ -279,11 +259,15 @@ func TransportWithStats(rw1, rw2 io.ReadWriter, domain, sid string, localPort in
 		Domain:     domain,
 	}
 
+	// 打印详细统计信息
+	log.Printf("[详细统计] SessionID=%s | 上行=%d (reader1=%d, writer2=%d) | 下行=%d (reader2=%d, writer1=%d) | 总流量=%d | 耗时=%v",
+		sid,
+		atomic.LoadInt64(&bytesUp), reader1.BytesRead(), writer2.BytesWritten(),
+		atomic.LoadInt64(&bytesDown), reader2.BytesRead(), writer1.BytesWritten(),
+		totalBytes, duration)
+
 	// 确保流量统计100%上传成功
 	reportStatsImmediately(info)
-
-	log.Printf("[流量统计] SessionID=%s | Domain=%s | 上行=%d | 下行=%d | 总流量=%d | 耗时=%v",
-		sid, domain, bytesUp, bytesDown, totalBytes, duration)
 
 	if errCount > 0 {
 		return io.ErrClosedPipe
@@ -291,113 +275,40 @@ func TransportWithStats(rw1, rw2 io.ReadWriter, domain, sid string, localPort in
 	return nil
 }
 
-// Transport1 统一传输接口
+// 简化版传输函数
 func Transport1(rw1, rw2 io.ReadWriter, address string, sid string) error {
-	var (
-		startTime = time.Now()
-	)
-
-	// 创建流量计数器
-	counter1 := NewTrafficCounter(rw1, rw1)
-	counter2 := NewTrafficCounter(rw2, rw2)
-
-	errc := make(chan error, 2)
-
-	go func() {
-		n, err := io.CopyBuffer(counter2, counter1, bufpool.Get(bufferSize))
-		_ = n // 不再直接使用返回值，而是从计数器获取
-		errc <- err
-	}()
-
-	go func() {
-		n, err := io.CopyBuffer(counter1, counter2, bufpool.Get(bufferSize))
-		_ = n // 不再直接使用返回值，而是从计数器获取
-		errc <- err
-	}()
-
-	var errCount int
-	for i := 0; i < 2; i++ {
-		if err := <-errc; err != nil {
-			if err != io.EOF {
-				errCount++
-			}
-		}
-	}
-
-	// 构建统计信息
-	bytesUp := counter1.BytesWritten()
-	bytesDown := counter2.BytesWritten()
-	total := bytesUp + bytesDown
-
-	info := Info{
-		Address:    address,
-		Bytes:      total,
-		Unix:       time.Now().Unix(),
-		RepeatNums: 1,
-		SessionID:  sid,
-	}
-
-	// 确保流量统计100%上传成功
-	reportStatsImmediately(info)
-
-	log.Printf("[流量统计] %s | 上行: %d | 下行: %d | 总流量: %d | 耗时=%v",
-		sid, bytesUp, bytesDown, total, time.Since(startTime))
-
-	if errCount > 0 {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
+	return TransportWithStats(rw1, rw2, address, sid, 0)
 }
 
-func CopyBuffer1(dst io.Writer, src io.Reader, bufSize int, address string, sid string) error {
-	buf := bufpool.Get(bufSize)
-	defer bufpool.Put(buf)
-
-	// 创建流量计数器
-	counter := NewTrafficCounter(src, dst)
-
-	bytes, err := io.CopyBuffer(counter, counter, buf)
-	log.Printf("[消耗流量：]--%s------%s------%s", address, bytes, sid)
-
-	// 构建统计信息
-	info := Info{
-		Address:    address,
-		Bytes:      counter.BytesWritten(), // 使用计数器的实际写入字节数
-		Unix:       time.Now().Unix(),
-		RepeatNums: 1,
-	}
-
-	// 确保流量统计100%上传成功
-	reportStatsImmediately(info)
-
-	return err
-}
-
-// CopyBufferWithStats 带统计的拷贝实现
+// 改进的CopyBufferWithStats
 func CopyBufferWithStats(dst io.Writer, src io.Reader, bufSize int, address, sid string) error {
 	buf := bufpool.Get(bufSize)
 	defer bufpool.Put(buf)
 
 	startTime := time.Now()
 
-	// 创建流量计数器
-	counter := NewTrafficCounter(src, dst)
+	// 创建独立的读写计数器
+	reader := NewTrafficCounter(src, nil)
+	writer := NewTrafficCounter(nil, dst)
 
-	_, err := io.CopyBuffer(counter, counter, buf)
+	n, err := io.CopyBuffer(writer, reader, buf)
 
 	// 构建统计信息
 	info := Info{
 		Address:    address,
-		Bytes:      counter.BytesWritten(), // 使用计数器的实际写入字节数
+		Bytes:      n, // 直接使用Copy的返回值
 		Unix:       time.Now().Unix(),
 		RepeatNums: 1,
 		SessionID:  sid,
 	}
 
+	// 打印详细统计
+	log.Printf("[Copy统计] %s | Copy返回值=%d | reader=%d | writer=%d | 耗时=%v",
+		sid, n, reader.BytesRead(), writer.BytesWritten(), time.Since(startTime))
+
 	// 确保流量统计100%上传成功
 	reportStatsImmediately(info)
 
-	log.Printf("[流量统计] %s | 传输量=%d | 耗时=%v", sid, counter.BytesWritten(), time.Since(startTime))
 	return err
 }
 
