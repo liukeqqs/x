@@ -104,6 +104,17 @@ func (h *httpHandler) Handle(ctx context.Context, conn net.Conn, opts ...handler
 	}
 	defer req.Body.Close()
 
+	// 提取域名信息并添加到日志中
+	domain := req.Host
+	if domain == "" && req.URL != nil && req.URL.Host != "" {
+		domain = req.URL.Host
+	}
+
+	// 更新日志字段，添加域名信息
+	log = log.WithFields(map[string]any{
+		"domain": domain,
+	})
+
 	return h.handleRequest(ctx, conn, req, log)
 }
 
@@ -140,13 +151,31 @@ func (h *httpHandler) handleRequest(ctx context.Context, conn net.Conn, req *htt
 	}
 	req.Header.Del("X-Gost-Target")
 
+	// 提取域名（如果是IP:端口格式，则只取IP部分）
+	domain, _, err := net.SplitHostPort(req.Host)
+	if err != nil {
+		// 如果解析失败，可能是纯域名或IP
+		domain = req.Host
+	}
+
+	// 尝试反向解析IP到域名
+	if ip := net.ParseIP(domain); ip != nil {
+		hosts, err := net.LookupAddr(domain)
+		if err == nil && len(hosts) > 0 {
+			domain = hosts[0]
+			// 移除可能的末尾点号
+			domain = strings.TrimSuffix(domain, ".")
+		}
+	}
+
 	addr := req.Host
 	if _, port, _ := net.SplitHostPort(addr); port == "" {
 		addr = net.JoinHostPort(addr, "80")
 	}
 
 	fields := map[string]any{
-		"dst": addr,
+		"dst":    addr,
+		"domain": domain, // 使用解析后的域名
 	}
 	if u, _, _ := h.basicProxyAuth(req.Header.Get("Proxy-Authorization"), log); u != "" {
 		fields["user"] = u
@@ -157,7 +186,7 @@ func (h *httpHandler) handleRequest(ctx context.Context, conn net.Conn, req *htt
 		dump, _ := httputil.DumpRequest(req, false)
 		log.Trace(string(dump))
 	}
-	log.Debugf("%s >> %s", conn.RemoteAddr(), addr)
+	log.Debugf("%s >> %s (domain: %s)", conn.RemoteAddr(), addr, domain)
 
 	resp := &http.Response{
 		ProtoMajor: 1,
@@ -181,7 +210,7 @@ func (h *httpHandler) handleRequest(ctx context.Context, conn net.Conn, req *htt
 			dump, _ := httputil.DumpResponse(resp, false)
 			log.Trace(string(dump))
 		}
-		log.Debug("bypass: ", addr)
+		log.Debug("bypass: ", addr, " (domain: ", domain, ")")
 
 		return resp.Write(conn)
 	}
@@ -257,11 +286,11 @@ func (h *httpHandler) handleRequest(ctx context.Context, conn net.Conn, req *htt
 	}
 
 	start := time.Now()
-	log.Infof("%s <-> %s", conn.RemoteAddr(), addr)
+	log.Infof("%s <-> %s (domain: %s)", conn.RemoteAddr(), addr, domain)
 	netpkg.Transport(rw, cc)
 	log.WithFields(map[string]any{
 		"duration": time.Since(start),
-	}).Infof("%s >-< %s", conn.RemoteAddr(), addr)
+	}).Infof("%s >-< %s (domain: %s)", conn.RemoteAddr(), addr, domain)
 
 	return nil
 }
