@@ -104,6 +104,17 @@ func (h *httpHandler) Handle(ctx context.Context, conn net.Conn, opts ...handler
 	}
 	defer req.Body.Close()
 
+	// 提取域名信息并添加到日志中
+	domain := req.Host
+	if domain == "" && req.URL != nil && req.URL.Host != "" {
+		domain = req.URL.Host
+	}
+
+	// 更新日志字段，添加域名信息
+	log = log.WithFields(map[string]any{
+		"domain": domain,
+	})
+
 	return h.handleRequest(ctx, conn, req, log)
 }
 
@@ -157,7 +168,7 @@ func (h *httpHandler) handleRequest(ctx context.Context, conn net.Conn, req *htt
 		dump, _ := httputil.DumpRequest(req, false)
 		log.Trace(string(dump))
 	}
-	log.Debugf("%s >> %s", conn.RemoteAddr(), addr)
+	log.Debugf("%s >> %s (domain: %s)", conn.RemoteAddr(), addr, req.Host)
 
 	resp := &http.Response{
 		ProtoMajor: 1,
@@ -181,7 +192,7 @@ func (h *httpHandler) handleRequest(ctx context.Context, conn net.Conn, req *htt
 			dump, _ := httputil.DumpResponse(resp, false)
 			log.Trace(string(dump))
 		}
-		log.Debug("bypass: ", addr)
+		log.Debug("bypass: ", addr, " (domain: ", req.Host, ")")
 
 		return resp.Write(conn)
 	}
@@ -257,11 +268,11 @@ func (h *httpHandler) handleRequest(ctx context.Context, conn net.Conn, req *htt
 	}
 
 	start := time.Now()
-	log.Infof("%s <-> %s", conn.RemoteAddr(), addr)
+	log.Infof("%s <-> %s (domain: %s)", conn.RemoteAddr(), addr, req.Host)
 	netpkg.Transport(rw, cc)
 	log.WithFields(map[string]any{
 		"duration": time.Since(start),
-	}).Infof("%s >-< %s", conn.RemoteAddr(), addr)
+	}).Infof("%s >-< %s (domain: %s)", conn.RemoteAddr(), addr, req.Host)
 
 	return nil
 }
