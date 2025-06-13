@@ -42,7 +42,6 @@ func (h *socks5Handler) handleConnect(ctx context.Context, conn net.Conn, networ
 		resp.Write(conn)
 		return err
 	}
-
 	defer cc.Close()
 
 	resp := gosocks5.NewReply(gosocks5.Succeeded, nil)
@@ -66,27 +65,33 @@ func (h *socks5Handler) handleConnect(ctx context.Context, conn net.Conn, networ
 		defer pstats.Add(stats.KindCurrentConns, -1)
 		rw = stats_wrapper.WrapReadWriter(rw, pstats)
 	}
+
 	// 获取本地端口
 	localPort := 0
 	if tcpAddr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
 		localPort = tcpAddr.Port
 	}
+
 	t := time.Now()
 	log.Infof("%s <-> %s", conn.RemoteAddr(), address)
 
-	//netpkg.Transport1(rw, cc, address, string(ctxvalue.SidFromContext(ctx)))
-		// 使用 TransportWithStats 替代 Transport1
-    	netpkg.TransportWithStats(
-    		rw,          // 客户端连接
-    		cc,          // 目标服务器连接
-    		address,     // 目标地址（如 example.com:443）
-    		string(ctxvalue.SidFromContext(ctx)), // 会话ID
-    		localPort,   // 代理本地端口（如 1080）
-    	)
+	// 使用精确流量统计的传输
+	if tcpConn, ok := rw.(net.Conn); ok {
+		netpkg.TransportWithStats(
+			tcpConn,
+			cc,
+			address,
+			string(ctxvalue.SidFromContext(ctx)),
+			localPort,
+		)
+	} else {
+		// 回退方案：使用普通传输（无精确统计）
+		netpkg.Transport(rw, cc)
+	}
 
 	log.WithFields(map[string]any{
 		"duration": time.Since(t),
-	}).Infof("%s >-< %s --->%s", conn.RemoteAddr(), address, ctxvalue.SidFromContext(ctx))
+	}).Infof("%s >-< %s", conn.RemoteAddr(), address)
 
 	return nil
 }
