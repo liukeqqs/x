@@ -6,7 +6,6 @@ import (
 	"io"
 	"log"
 	"net"
-	"sync"
 	"time"
 )
 
