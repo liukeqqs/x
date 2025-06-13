@@ -67,11 +67,11 @@ func CopyBuffer1(dst io.Writer, src io.Reader, bufSize int, address string, sid 
 	defer bufpool.Put(buf)
 	bytes, err := io.CopyBuffer(dst, src, buf)
 	log.Printf("[消耗流量：]--%s------%s------%s", address, bytes, sid)
-/* 	RChan <- Info{
+	RChan <- Info{
 		Address: address,
 		Bytes:   bytes,
 		Sid:     sid,
-	} */
+	}
 	return err
 }
 
