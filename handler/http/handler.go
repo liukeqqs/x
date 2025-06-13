@@ -269,18 +269,8 @@ func (h *httpHandler) handleRequest(ctx context.Context, conn net.Conn, req *htt
 	}
 
 	log.Infof("%s <-【Transport】> %s (Domain: %s)", conn.RemoteAddr(), addr, domain)
-	localPort := 0
-	if tcpAddr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
-		localPort = tcpAddr.Port
-	}
-	//netpkg.Transport(rw, cc)
-	    	netpkg.TransportWithStats(
-        		rw,        // 客户端连接
-        		cc,          // 目标服务器连接
-        		domain.String(), // 目标地址（如 example.com:443）
-        		string(ctxvalue.SidFromContext(ctx)), // 会话ID
-        		localPort,   // 代理本地端口（如 1080）
-        	)
+
+	netpkg.Transport(rw, cc)
 	log.WithFields(map[string]any{
 		"duration": time.Since(start), // 使用外部作用域的 start 变量
 		"Domain": domain, // domain
