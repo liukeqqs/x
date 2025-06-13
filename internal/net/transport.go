@@ -145,7 +145,7 @@ func TransportWithStats(rw1, rw2 io.ReadWriter, domain, sid string, localPort in
 		if err := <-errc; err != nil {
 			if err != io.EOF {
 			totalBytes := bytesUp + bytesDown
-				log.Printf("传输错误: %v----Sid：%v，| 上行=%d | 下行=%d | 总流量=%d ", err,sid,bytesUp, bytesDown, totalBytes)
+				log.Printf("传输错误: %v----Sid：%v，| 上行=%d | 下行=%d | 总流量=%d  | Domain=%s", err,sid,bytesUp, bytesDown, totalBytes,domain)
 				errCount++
 			}
 		}
