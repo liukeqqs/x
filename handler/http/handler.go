@@ -257,7 +257,7 @@ func (h *httpHandler) handleRequest(ctx context.Context, conn net.Conn, req *htt
 	}
 
 	// 移除重复的 start 变量声明
-	start := time.Now() // 删除这行，避免变量作用域问题
+	// start := time.Now() // 删除这行，避免变量作用域问题
 
 	// 获取并记录域名信息
 	domain := req.Host
