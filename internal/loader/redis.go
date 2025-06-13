@@ -109,7 +109,6 @@ func (p *redisStringLoader) GetValSet(ctx context.Context, key string, object in
 	var (
 		data      string
 		exist     = true
-		_info     = &net.Info{}
 		paramByte []byte
 	)
 	defer func() {
@@ -123,35 +122,6 @@ func (p *redisStringLoader) GetValSet(ctx context.Context, key string, object in
 		err = nil
 	}
 
-	if exist {
-		var info = object.(net.Info)
-
-		err = json.Unmarshal([]byte(data), _info)
-		if err != nil {
-			return
-		}
-		info.Bytes += _info.Bytes
-		info.RepeatNums = _info.RepeatNums + 1
-		paramByte, err = json.Marshal(info)
-		if err != nil {
-			return
-		}
-		err = p.client.Set(ctx, key, string(paramByte), time.Hour*24*30).Err()
-		if err != nil {
-			return err
-		}
-
-		return
-	}
-
-	paramByte, err = json.Marshal(object.(net.Info))
-	if err != nil {
-		return
-	}
-	err = p.client.Set(ctx, key, string(paramByte), time.Hour*24*30).Err()
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
