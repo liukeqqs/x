@@ -1,4 +1,4 @@
-// net包完整代码（修正流量统计逻辑）
+// net包完整代码（修正strings包导入和日志调用）
 package net
 
 import (
@@ -6,7 +6,7 @@ import (
 	"io"
 	"log"
 	"net"
-	"strings"
+	"strings" // 添加strings包导入
 	"sync"
 	"time"
 
@@ -32,14 +32,12 @@ var (
 type Info struct {
 	Address    string `json:"address"`
 	LocalPort  int    `json:"localport"`
-	Bytes      int64  `json:"bytes"`      // 总流量（上行+下行）
+	Bytes      int64  `json:"bytes"`
 	Unix       int64  `json:"unix"`
 	RepeatNums int64  `json:"repeatnums"`
-	SessionID  string `json:"sid,omitempty"`   // 会话ID
-	Domain     string `json:"domain,omitempty"`// 域名
-	RequestID  string `json:"req_id,omitempty"`// 请求ID
-	BytesUp    int64  `json:"bytes_up"`   // 新增：上行流量
-	BytesDown  int64  `json:"bytes_down"` // 新增：下行流量
+	SessionID  string `json:"sid,omitempty"`   // 新增会话ID
+	Domain     string `json:"domain,omitempty"`// 新增域名
+	RequestID  string `json:"req_id,omitempty"`// 新增请求ID
 }
 
 // 初始化后台队列处理器
@@ -150,8 +148,6 @@ func RecordBypassTraffic(domain, sid string, localAddr net.Addr) {
 		SessionID:  sidParts[0],
 		Domain:     domain,
 		RequestID:  reqID,
-		BytesUp:    0,
-		BytesDown:  0,
 	}
 
 	log.Printf("[Bypass流量记录] SessionID=%s | Domain=%s | ReqID=%s | 流量=0 (被过滤)",
@@ -328,18 +324,16 @@ func TransportWithStats(rw1, rw2 io.ReadWriter, domain, sid string, localPort in
 	totalBytes := bytesUp + bytesDown
 	duration := time.Since(startTime)
 
-	// 构建增强版统计信息，确保Bytes字段包含上下行流量总和
+	// 构建增强版统计信息
 	rchanQueue <- Info{
 		Address:    domain,
 		LocalPort:  localPort,
-		Bytes:      totalBytes,    // 总流量 = 上行 + 下行
+		Bytes:      totalBytes,
 		Unix:       time.Now().Unix(),
 		RepeatNums: 1,
 		SessionID:  sessionID,
 		Domain:     domain,
 		RequestID:  reqID,
-		BytesUp:    bytesUp,       // 单独记录上行流量
-		BytesDown:  bytesDown,     // 单独记录下行流量
 	}
 
 	log.Printf("[流量统计] SessionID=%s | Domain=%s | ReqID=%s | 上行=%d | 下行=%d | 总流量=%d | 耗时=%v | 错误=%v",
@@ -373,8 +367,6 @@ func Transport1(rw1, rw2 io.ReadWriter, address string, sid string) error {
 			RepeatNums: 1,
 			SessionID:  sessionID,
 			RequestID:  reqID,
-			BytesUp:    bytesUp,
-			BytesDown:  bytesDown,
 		}
 		log.Printf("[流量统计] SessionID=%s | ReqID=%s | 上行: %d | 下行: %d | 总流量: %d | 耗时=%v",
 			sessionID, reqID, bytesUp, bytesDown, total, time.Since(startTime))
