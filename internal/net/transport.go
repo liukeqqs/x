@@ -63,7 +63,6 @@ func CopyBuffer(dst io.Writer, src io.Reader, bufSize int) error {
 	return err
 }
 // TransportWithStats 带流量统计的传输
-// TransportWithStats 带流量统计的传输 (修复版)
 func TransportWithStats(rw1, rw2 io.ReadWriter, domain, sid string, localPort int) error {
 	info := &TrafficInfo{
 		Domain:    domain,
@@ -71,54 +70,48 @@ func TransportWithStats(rw1, rw2 io.ReadWriter, domain, sid string, localPort in
 		SessionID: sid,
 		StartTime: time.Now().Unix(),
 	}
+	defer func() {
+		info.EndTime = time.Now().Unix()
+		totalBytes := info.BytesUp + info.BytesDown
 
-	// 使用同步等待确保两个方向都完成
-	var wg sync.WaitGroup
-	wg.Add(2)
+		// 发送到新通道
+		TrafficChan <- info
 
-	// 上行流量统计 (rw1 -> rw2)
-	go func() {
-		defer wg.Done()
-		info.BytesUp, _ = io.Copy(rw2, rw1)
-		// 尝试关闭写方向
-		if c, ok := rw2.(interface{ CloseWrite() error }); ok {
-			c.CloseWrite()
+		// 发送到旧通道 RChan（假设已存在）
+		RChan <- Info{
+			Address:    info.Domain,
+			LocalPort:      info.LocalPort,
+			Bytes:      totalBytes,
+			Unix:       time.Now().Unix(),
+			RepeatNums: 1,
 		}
+
+		log.Printf(
+			"[流量统计] SessionID=%s | Domain=%s | LocalPort=%d | 上行=%d | 下行=%d | 总流量=%d",
+			info.SessionID,
+			info.Domain,
+			info.LocalPort,
+			info.BytesUp,
+			info.BytesDown,
+			totalBytes,
+		)
 	}()
 
-	// 下行流量统计 (rw2 -> rw1)
+	errc := make(chan error, 2)
 	go func() {
-		defer wg.Done()
-		info.BytesDown, _ = io.Copy(rw1, rw2)
-		// 尝试关闭写方向
-		if c, ok := rw1.(interface{ CloseWrite() error }); ok {
-			c.CloseWrite()
-		}
+		n, err := io.Copy(rw2, rw1)
+		info.BytesUp = n
+		errc <- err
+	}()
+	go func() {
+		n, err := io.Copy(rw1, rw2)
+		info.BytesDown = n
+		errc <- err
 	}()
 
-	// 等待双向传输完成
-	wg.Wait()
-	info.EndTime = time.Now().Unix()
-
-	// 发送统计信息（确保只发送一次）
-	totalBytes := info.BytesUp + info.BytesDown
-	TrafficChan <- info
-	RChan <- Info{
-		Address:    info.Domain,
-		LocalPort:  info.LocalPort,
-		Bytes:      totalBytes,
-		Unix:       time.Now().Unix(),
-		RepeatNums: 1,
+	if err := <-errc; err != nil && err != io.EOF {
+		return err
 	}
-
-	log.Printf(
-		"[流量统计] SessionID=%s | Domain=%s | 上行=%d | 下行=%d | 总流量=%d",
-		info.SessionID,
-		info.Domain,
-		info.BytesUp,
-		info.BytesDown,
-		totalBytes,
-	)
 	return nil
 }
 func Transport1(rw1, rw2 io.ReadWriter, address string, sid string) error {
