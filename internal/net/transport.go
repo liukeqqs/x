@@ -1,4 +1,4 @@
-// net包代码
+// net包代码 - 修正版
 package net
 
 import (

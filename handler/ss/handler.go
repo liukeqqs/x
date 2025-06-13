@@ -1,11 +1,10 @@
-// ss包代码
+// ss包代码 - 修正版
 package ss
 
 import (
 	"context"
 	"io"
 	"net"
-	"sync"
 	"time"
 
 	"github.com/go-gost/gosocks5"
@@ -26,7 +25,7 @@ func init() {
 type ssHandler struct {
 	cipher  core.Cipher
 	router  *chain.Router
-	md      metadata
+	md      metadata // 假设metadata结构体在其他文件中定义
 	options handler.Options
 	bypass  bool // 新增字段，标记是否启用了bypass过滤
 }
@@ -43,7 +42,7 @@ func NewHandler(opts ...handler.Option) handler.Handler {
 }
 
 func (h *ssHandler) Init(md md.Metadata) (err error) {
-	if err = h.parseMetadata(md); err != nil {
+	if err = h.parseMetadata(md); err != nil { // 假设parseMetadata方法在其他文件中实现
 		return
 	}
 	if h.options.Auth != nil {
@@ -59,7 +58,7 @@ func (h *ssHandler) Init(md md.Metadata) (err error) {
 	if h.router == nil {
 		h.router = chain.NewRouter(chain.LoggerRouterOption(h.options.Logger))
 	}
-	
+
 	// 初始化bypass字段
 	h.bypass = h.options.Bypass != nil
 
@@ -111,11 +110,11 @@ func (h *ssHandler) Handle(ctx context.Context, conn net.Conn, opts ...handler.H
 	// 记录可能的bypass情况
 	if h.bypass && h.options.Bypass.Contains(ctx, "tcp", addr.String()) {
 		log.Debug("bypass: ", addr.String())
-		
+
 		// 记录被bypass的请求流量
 		sid := string(ctxvalue.SidFromContext(ctx))
 		netpkg.RecordBypassTraffic(addr.String(), sid, conn.LocalAddr())
-		
+
 		return nil
 	}
 
@@ -129,7 +128,7 @@ func (h *ssHandler) Handle(ctx context.Context, conn net.Conn, opts ...handler.H
 		return err
 	}
 	defer cc.Close()
-	
+
 	// 获取本地端口
 	localPort := 0
 	if tcpAddr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
@@ -137,7 +136,7 @@ func (h *ssHandler) Handle(ctx context.Context, conn net.Conn, opts ...handler.H
 	}
 	t := time.Now()
 	log.Infof("%s <-> %s", conn.RemoteAddr(), addr)
-	
+
 	// 使用 TransportWithStats 替代 Transport1
 	err = netpkg.TransportWithStats(
 		conn,        // 客户端连接
@@ -146,7 +145,7 @@ func (h *ssHandler) Handle(ctx context.Context, conn net.Conn, opts ...handler.H
 		string(ctxvalue.SidFromContext(ctx)), // 会话ID
 		localPort,   // 代理本地端口（如 1080）
 	)
-	
+
 	log.WithFields(map[string]any{
 		"duration": time.Since(t),
 	})
@@ -165,17 +164,4 @@ func (h *ssHandler) checkRateLimit(addr net.Addr) bool {
 	}
 
 	return true
-}
-
-// 假设metadata结构体定义如下
-type metadata struct {
-	readTimeout time.Duration
-	hash        string
-	key         string
-}
-
-// 假设parseMetadata方法实现如下
-func (h *ssHandler) parseMetadata(md md.Metadata) error {
-	// 实现省略，保持原有逻辑
-	return nil
 }
