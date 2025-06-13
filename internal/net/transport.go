@@ -276,7 +276,6 @@ func CopyBuffer(dst io.Writer, src io.Reader, bufSize int) error {
 	return err
 }
 
-// 修复4: 重写流量统计传输函数
 func TransportWithStats(rw1, rw2 io.ReadWriter, domain, sid string, localPort int) error {
 	startTime := time.Now()
 
