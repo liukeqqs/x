@@ -2,91 +2,173 @@ package v5
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"net"
 	"time"
 
 	"github.com/go-gost/gosocks5"
-	"github.com/liukeqqs/core/limiter/traffic"
-	"github.com/liukeqqs/core/logger"
+	"github.com/liukeqqs/core/chain"
+	"github.com/liukeqqs/core/handler"
+	md "github.com/liukeqqs/core/metadata"
 	ctxvalue "github.com/liukeqqs/x/ctx"
-	netpkg "github.com/liukeqqs/x/internal/net"
-	"github.com/liukeqqs/x/limiter/traffic/wrapper"
-	"github.com/liukeqqs/x/stats"
-	stats_wrapper "github.com/liukeqqs/x/stats/wrapper"
+	"github.com/liukeqqs/x/internal/util/socks"
+	stats_util "github.com/liukeqqs/x/internal/util/stats"
+	"github.com/liukeqqs/x/registry"
 )
 
-func (h *socks5Handler) handleConnect(ctx context.Context, conn net.Conn, network, address string, log logger.Logger) error {
-	log = log.WithFields(map[string]any{
-		"dst": fmt.Sprintf("%s/%s", address, network),
-		"cmd": "connect",
+var (
+	ErrUnknownCmd = errors.New("socks5: unknown command")
+)
+
+func init() {
+	registry.HandlerRegistry().Register("socks5", NewHandler)
+	registry.HandlerRegistry().Register("socks", NewHandler)
+}
+
+type socks5Handler struct {
+	selector gosocks5.Selector
+	router   *chain.Router
+	md       metadata
+	options  handler.Options
+	stats    *stats_util.HandlerStats
+	cancel   context.CancelFunc
+}
+
+func NewHandler(opts ...handler.Option) handler.Handler {
+	options := handler.Options{}
+	for _, opt := range opts {
+		opt(&options)
+	}
+
+	return &socks5Handler{
+		options: options,
+		stats:   stats_util.NewHandlerStats(options.Service),
+	}
+}
+
+func (h *socks5Handler) Init(md md.Metadata) (err error) {
+	if err = h.parseMetadata(md); err != nil {
+		return
+	}
+
+	h.router = h.options.Router
+	if h.router == nil {
+		h.router = chain.NewRouter(chain.LoggerRouterOption(h.options.Logger))
+	}
+
+	h.selector = &serverSelector{
+		Authenticator: h.options.Auther,
+		TLSConfig:     h.options.TLSConfig,
+		logger:        h.options.Logger,
+		noTLS:         h.md.noTLS,
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	h.cancel = cancel
+
+	if h.options.Observer != nil {
+		go h.observeStats(ctx)
+	}
+
+	return
+}
+
+func (h *socks5Handler) Handle(ctx context.Context, conn net.Conn, opts ...handler.HandleOption) error {
+	defer conn.Close()
+
+	start := time.Now()
+
+	log := h.options.Logger.WithFields(map[string]any{
+		"remote": conn.RemoteAddr().String(),
+		"local":  conn.LocalAddr().String(),
 	})
-	log.Debugf("%s >> %s", conn.RemoteAddr(), address)
 
-	if h.options.Bypass != nil && h.options.Bypass.Contains(ctx, network, address) {
-		resp := gosocks5.NewReply(gosocks5.NotAllowed, nil)
-		log.Trace(resp)
-		log.Debug("bypass: ", address)
-		return resp.Write(conn)
+	log.Infof("%s <> %s", conn.RemoteAddr(), conn.LocalAddr())
+	defer func() {
+		log.WithFields(map[string]any{
+			"duration": time.Since(start),
+		}).Infof("%s >< %s", conn.RemoteAddr(), conn.LocalAddr())
+	}()
+
+	if !h.checkRateLimit(conn.RemoteAddr()) {
+		return nil
 	}
 
-	switch h.md.hash {
-	case "host":
-		ctx = ctxvalue.ContextWithHash(ctx, &ctxvalue.Hash{Source: address})
+	if h.md.readTimeout > 0 {
+		conn.SetReadDeadline(time.Now().Add(h.md.readTimeout))
 	}
 
-	cc, err := h.router.Dial(ctx, network, address)
+	sc := gosocks5.ServerConn(conn, h.selector)
+	req, err := gosocks5.ReadRequest(sc)
 	if err != nil {
-		resp := gosocks5.NewReply(gosocks5.NetUnreachable, nil)
+		log.Error(err)
+		return err
+	}
+	log.Trace(req)
+
+	if clientID := sc.ID(); clientID != "" {
+		ctx = ctxvalue.ContextWithClientID(ctx, ctxvalue.ClientID(clientID))
+	}
+
+	conn = sc
+	conn.SetReadDeadline(time.Time{})
+
+	address := req.Addr.String()
+
+	switch req.Cmd {
+	case gosocks5.CmdConnect:
+		return h.handleConnect(ctx, conn, "tcp", address, log)
+	case gosocks5.CmdBind:
+		return h.handleBind(ctx, conn, "tcp", address, log)
+	case socks.CmdMuxBind:
+		return h.handleMuxBind(ctx, conn, "tcp", address, log)
+	case gosocks5.CmdUdp:
+		return h.handleUDP(ctx, conn, log)
+	case socks.CmdUDPTun:
+		return h.handleUDPTun(ctx, conn, "udp", address, log)
+	default:
+		err = ErrUnknownCmd
+		log.Error(err)
+		resp := gosocks5.NewReply(gosocks5.CmdUnsupported, nil)
 		log.Trace(resp)
 		resp.Write(conn)
 		return err
 	}
+}
 
-	defer cc.Close()
-
-	resp := gosocks5.NewReply(gosocks5.Succeeded, nil)
-	log.Trace(resp)
-	if err := resp.Write(conn); err != nil {
-		log.Error(err)
-		return err
+func (h *socks5Handler) Close() error {
+	if h.cancel != nil {
+		h.cancel()
 	}
-
-	clientID := ctxvalue.ClientIDFromContext(ctx)
-	rw := wrapper.WrapReadWriter(h.options.Limiter, conn,
-		traffic.NetworkOption(network),
-		traffic.AddrOption(address),
-		traffic.ClientOption(string(clientID)),
-		traffic.SrcOption(conn.RemoteAddr().String()),
-	)
-	if h.options.Observer != nil {
-		pstats := h.stats.Stats(string(clientID))
-		pstats.Add(stats.KindTotalConns, 1)
-		pstats.Add(stats.KindCurrentConns, 1)
-		defer pstats.Add(stats.KindCurrentConns, -1)
-		rw = stats_wrapper.WrapReadWriter(rw, pstats)
-	}
-	// 获取本地端口
-	localPort := 0
-	if tcpAddr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
-		localPort = tcpAddr.Port
-	}
-	t := time.Now()
-	log.Infof("%s <-> %s", conn.RemoteAddr(), address)
-
-	//netpkg.Transport1(rw, cc, address, string(ctxvalue.SidFromContext(ctx)))
-		// 使用 TransportWithStats 替代 Transport1
-    	netpkg.TransportWithStats(
-    		rw,          // 客户端连接
-    		cc,          // 目标服务器连接
-    		address,     // 目标地址（如 example.com:443）
-    		string(ctxvalue.SidFromContext(ctx)), // 会话ID
-    		localPort,   // 代理本地端口（如 1080）
-    	)
-
-	log.WithFields(map[string]any{
-		"duration": time.Since(t),
-	}).Infof("%s >-< %s --->%s", conn.RemoteAddr(), address, ctxvalue.SidFromContext(ctx))
-
 	return nil
+}
+
+func (h *socks5Handler) checkRateLimit(addr net.Addr) bool {
+	if h.options.RateLimiter == nil {
+		return true
+	}
+	host, _, _ := net.SplitHostPort(addr.String())
+	if limiter := h.options.RateLimiter.Limiter(host); limiter != nil {
+		return limiter.Allow(1)
+	}
+
+	return true
+}
+
+func (h *socks5Handler) observeStats(ctx context.Context) {
+	if h.options.Observer == nil {
+		return
+	}
+
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			h.options.Observer.Observe(ctx, h.stats.Events())
+		case <-ctx.Done():
+			return
+		}
+	}
 }
