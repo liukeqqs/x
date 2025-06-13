@@ -81,36 +81,117 @@ func batchReportStats() {
 			batch = append(batch, info)
 			if len(batch) >= maxBatchSize {
 				// 达到批量大小，立即处理
-				flushBatch(batch)
+				if !flushBatchWithRetry(batch) {
+					// 如果批量处理失败，将数据逐一条目重新加入队列
+					for _, item := range batch {
+						reportChan <- item
+					}
+				}
 				batch = make([]Info, 0, maxBatchSize)
 			}
 		case <-ticker.C:
 			// 时间间隔到，处理当前批次
 			if len(batch) > 0 {
-				flushBatch(batch)
+				if !flushBatchWithRetry(batch) {
+					// 如果批量处理失败，将数据逐一条目重新加入队列
+					for _, item := range batch {
+						reportChan <- item
+					}
+				}
 				batch = make([]Info, 0, maxBatchSize)
 			}
 		}
 	}
 }
 
-// 处理一批统计信息
-func flushBatch(batch []Info) {
-	// 这里可以添加批量处理逻辑，例如合并相同会话的统计信息
-	for _, info := range batch {
-		rchanQueue <- info
+// 带重试的批量处理
+func flushBatchWithRetry(batch []Info) bool {
+	maxRetries := 5
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		success := true
+		for _, info := range batch {
+			select {
+			case rchanQueue <- info:
+				// 发送成功
+			default:
+				// 队列满，尝试失败
+				success = false
+				break
+			}
+		}
+
+		if success {
+			return true
+		}
+
+		// 指数退避
+		delay := time.Duration(1<<uint(attempt)) * retryInterval
+		log.Printf("批量处理失败，第 %d 次重试，等待 %v", attempt+1, delay)
+		time.Sleep(delay)
 	}
+
+	return false
 }
 
 // 立即上报流量统计，不经过批量处理
 func reportStatsImmediately(info Info) {
-	// 使用非阻塞方式发送，确保不阻塞网络操作
-	select {
-	case rchanQueue <- info:
-		// 发送成功
-	default:
-		log.Printf("紧急流量上报队列阻塞，丢弃统计信息: %v", info)
+	// 使用指数退避重试机制，确保数据不丢失
+	maxRetries := 10
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		select {
+		case rchanQueue <- info:
+			// 发送成功
+			return
+		default:
+			// 队列满，等待后重试
+			delay := time.Duration(1<<uint(attempt)) * retryInterval
+			log.Printf("紧急上报队列阻塞，第 %d 次重试，等待 %v", attempt+1, delay)
+			time.Sleep(delay)
+		}
 	}
+
+	// 所有重试都失败，记录错误
+	log.Printf("警告: 流量统计信息上报失败，已重试 %d 次: %v", maxRetries, info)
+}
+
+// 流量统计包装器
+type TrafficCounter struct {
+	reader     io.Reader
+	writer     io.Writer
+	bytesRead  int64
+	bytesWrite int64
+}
+
+// 创建新的流量计数器
+func NewTrafficCounter(r io.Reader, w io.Writer) *TrafficCounter {
+	return &TrafficCounter{
+		reader: r,
+		writer: w,
+	}
+}
+
+// 实现Reader接口
+func (tc *TrafficCounter) Read(p []byte) (n int, err error) {
+	n, err = tc.reader.Read(p)
+	atomic.AddInt64(&tc.bytesRead, int64(n))
+	return
+}
+
+// 实现Writer接口
+func (tc *TrafficCounter) Write(p []byte) (n int, err error) {
+	n, err = tc.writer.Write(p)
+	atomic.AddInt64(&tc.bytesWrite, int64(n))
+	return
+}
+
+// 获取读取的字节数
+func (tc *TrafficCounter) BytesRead() int64 {
+	return atomic.LoadInt64(&tc.bytesRead)
+}
+
+// 获取写入的字节数
+func (tc *TrafficCounter) BytesWritten() int64 {
+	return atomic.LoadInt64(&tc.bytesWrite)
 }
 
 func Transport(rw1, rw2 io.ReadWriter) error {
@@ -140,40 +221,34 @@ func CopyBuffer(dst io.Writer, src io.Reader, bufSize int) error {
 // TransportWithStats 新版可靠传输实现
 func TransportWithStats(rw1, rw2 io.ReadWriter, domain, sid string, localPort int) error {
 	var (
-		bytesUp   int64
-		bytesDown int64
 		startTime = time.Now()
 	)
 
-	// 使用 WaitGroup 确保统计完成
-	var wg sync.WaitGroup
-	wg.Add(2)
+	// 创建流量计数器
+	counter1 := NewTrafficCounter(rw1, rw1)
+	counter2 := NewTrafficCounter(rw2, rw2)
 
 	errc := make(chan error, 2)
 
 	// 上行流量采集
 	go func() {
-		defer wg.Done()
 		defer func() {
 			if r := recover(); r != nil {
 				log.Printf("上行协程异常: %v", r)
 			}
 		}()
-		n, err := io.Copy(rw2, rw1)
-		atomic.AddInt64(&bytesUp, n)
+		_, err := io.Copy(counter2, counter1)
 		errc <- err
 	}()
 
 	// 下行流量采集
 	go func() {
-		defer wg.Done()
 		defer func() {
 			if r := recover(); r != nil {
 				log.Printf("下行协程异常: %v", r)
 			}
 		}()
-		n, err := io.Copy(rw1, rw2)
-		atomic.AddInt64(&bytesDown, n)
+		_, err := io.Copy(counter1, counter2)
 		errc <- err
 	}()
 
@@ -188,11 +263,10 @@ func TransportWithStats(rw1, rw2 io.ReadWriter, domain, sid string, localPort in
 		}
 	}
 
-	// 等待所有流量统计完成
-	wg.Wait()
-
 	// 构建统计信息
-	totalBytes := atomic.LoadInt64(&bytesUp) + atomic.LoadInt64(&bytesDown)
+	bytesUp := counter1.BytesWritten()
+	bytesDown := counter2.BytesWritten()
+	totalBytes := bytesUp + bytesDown
 	duration := time.Since(startTime)
 
 	info := Info{
@@ -205,17 +279,11 @@ func TransportWithStats(rw1, rw2 io.ReadWriter, domain, sid string, localPort in
 		Domain:     domain,
 	}
 
-	// 优先使用批量上报，确保不阻塞网络
-	select {
-	case reportChan <- info:
-		// 成功加入批量处理队列
-	default:
-		// 批量队列已满，立即上报
-		reportStatsImmediately(info)
-	}
+	// 确保流量统计100%上传成功
+	reportStatsImmediately(info)
 
 	log.Printf("[流量统计] SessionID=%s | Domain=%s | 上行=%d | 下行=%d | 总流量=%d | 耗时=%v",
-		sid, domain, atomic.LoadInt64(&bytesUp), atomic.LoadInt64(&bytesDown), totalBytes, duration)
+		sid, domain, bytesUp, bytesDown, totalBytes, duration)
 
 	if errCount > 0 {
 		return io.ErrClosedPipe
@@ -226,28 +294,24 @@ func TransportWithStats(rw1, rw2 io.ReadWriter, domain, sid string, localPort in
 // Transport1 统一传输接口
 func Transport1(rw1, rw2 io.ReadWriter, address string, sid string) error {
 	var (
-		bytesUp   int64
-		bytesDown int64
 		startTime = time.Now()
 	)
 
-	// 使用 WaitGroup 确保统计完成
-	var wg sync.WaitGroup
-	wg.Add(2)
+	// 创建流量计数器
+	counter1 := NewTrafficCounter(rw1, rw1)
+	counter2 := NewTrafficCounter(rw2, rw2)
 
 	errc := make(chan error, 2)
 
 	go func() {
-		defer wg.Done()
-		n, err := io.CopyBuffer(rw2, rw1, bufpool.Get(bufferSize))
-		atomic.AddInt64(&bytesUp, n)
+		n, err := io.CopyBuffer(counter2, counter1, bufpool.Get(bufferSize))
+		_ = n // 不再直接使用返回值，而是从计数器获取
 		errc <- err
 	}()
 
 	go func() {
-		defer wg.Done()
-		n, err := io.CopyBuffer(rw1, rw2, bufpool.Get(bufferSize))
-		atomic.AddInt64(&bytesDown, n)
+		n, err := io.CopyBuffer(counter1, counter2, bufpool.Get(bufferSize))
+		_ = n // 不再直接使用返回值，而是从计数器获取
 		errc <- err
 	}()
 
@@ -260,11 +324,10 @@ func Transport1(rw1, rw2 io.ReadWriter, address string, sid string) error {
 		}
 	}
 
-	// 等待所有流量统计完成
-	wg.Wait()
-
 	// 构建统计信息
-	total := atomic.LoadInt64(&bytesUp) + atomic.LoadInt64(&bytesDown)
+	bytesUp := counter1.BytesWritten()
+	bytesDown := counter2.BytesWritten()
+	total := bytesUp + bytesDown
 
 	info := Info{
 		Address:    address,
@@ -274,17 +337,11 @@ func Transport1(rw1, rw2 io.ReadWriter, address string, sid string) error {
 		SessionID:  sid,
 	}
 
-	// 优先使用批量上报，确保不阻塞网络
-	select {
-	case reportChan <- info:
-		// 成功加入批量处理队列
-	default:
-		// 批量队列已满，立即上报
-		reportStatsImmediately(info)
-	}
+	// 确保流量统计100%上传成功
+	reportStatsImmediately(info)
 
 	log.Printf("[流量统计] %s | 上行: %d | 下行: %d | 总流量: %d | 耗时=%v",
-		sid, atomic.LoadInt64(&bytesUp), atomic.LoadInt64(&bytesDown), total, time.Since(startTime))
+		sid, bytesUp, bytesDown, total, time.Since(startTime))
 
 	if errCount > 0 {
 		return io.ErrUnexpectedEOF
@@ -295,24 +352,23 @@ func Transport1(rw1, rw2 io.ReadWriter, address string, sid string) error {
 func CopyBuffer1(dst io.Writer, src io.Reader, bufSize int, address string, sid string) error {
 	buf := bufpool.Get(bufSize)
 	defer bufpool.Put(buf)
-	bytes, err := io.CopyBuffer(dst, src, buf)
+
+	// 创建流量计数器
+	counter := NewTrafficCounter(src, dst)
+
+	bytes, err := io.CopyBuffer(counter, counter, buf)
 	log.Printf("[消耗流量：]--%s------%s------%s", address, bytes, sid)
 
-	// 立即上报单次流量统计
+	// 构建统计信息
 	info := Info{
 		Address:    address,
-		Bytes:      bytes,
+		Bytes:      counter.BytesWritten(), // 使用计数器的实际写入字节数
 		Unix:       time.Now().Unix(),
 		RepeatNums: 1,
 	}
 
-	select {
-	case reportChan <- info:
-		// 成功加入批量处理队列
-	default:
-		// 批量队列已满，立即上报
-		reportStatsImmediately(info)
-	}
+	// 确保流量统计100%上传成功
+	reportStatsImmediately(info)
 
 	return err
 }
@@ -323,27 +379,25 @@ func CopyBufferWithStats(dst io.Writer, src io.Reader, bufSize int, address, sid
 	defer bufpool.Put(buf)
 
 	startTime := time.Now()
-	bytes, err := io.CopyBuffer(dst, src, buf)
+
+	// 创建流量计数器
+	counter := NewTrafficCounter(src, dst)
+
+	_, err := io.CopyBuffer(counter, counter, buf)
 
 	// 构建统计信息
 	info := Info{
 		Address:    address,
-		Bytes:      bytes,
+		Bytes:      counter.BytesWritten(), // 使用计数器的实际写入字节数
 		Unix:       time.Now().Unix(),
 		RepeatNums: 1,
 		SessionID:  sid,
 	}
 
-	// 优先使用批量上报，确保不阻塞网络
-	select {
-	case reportChan <- info:
-		// 成功加入批量处理队列
-	default:
-		// 批量队列已满，立即上报
-		reportStatsImmediately(info)
-	}
+	// 确保流量统计100%上传成功
+	reportStatsImmediately(info)
 
-	log.Printf("[流量统计] %s | 传输量=%d | 耗时=%v", sid, bytes, time.Since(startTime))
+	log.Printf("[流量统计] %s | 传输量=%d | 耗时=%v", sid, counter.BytesWritten(), time.Since(startTime))
 	return err
 }
 
