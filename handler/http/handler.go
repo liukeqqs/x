@@ -146,7 +146,7 @@ func (h *httpHandler) handleRequest(ctx context.Context, conn net.Conn, req *htt
 	}
 
 	fields := map[string]any{
-		"dst": addr,
+		"dst": addr+"域名",
 	}
 	if u, _, _ := h.basicProxyAuth(req.Header.Get("Proxy-Authorization"), log); u != "" {
 		fields["user"] = u
