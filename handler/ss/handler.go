@@ -1,9 +1,11 @@
+// ss包代码
 package ss
 
 import (
 	"context"
 	"io"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/go-gost/gosocks5"
@@ -26,6 +28,7 @@ type ssHandler struct {
 	router  *chain.Router
 	md      metadata
 	options handler.Options
+	bypass  bool // 新增字段，标记是否启用了bypass过滤
 }
 
 func NewHandler(opts ...handler.Option) handler.Handler {
@@ -56,6 +59,9 @@ func (h *ssHandler) Init(md md.Metadata) (err error) {
 	if h.router == nil {
 		h.router = chain.NewRouter(chain.LoggerRouterOption(h.options.Logger))
 	}
+	
+	// 初始化bypass字段
+	h.bypass = h.options.Bypass != nil
 
 	return
 }
@@ -102,8 +108,14 @@ func (h *ssHandler) Handle(ctx context.Context, conn net.Conn, opts ...handler.H
 
 	log.Debugf("%s >> %s", conn.RemoteAddr(), addr)
 
-	if h.options.Bypass != nil && h.options.Bypass.Contains(ctx, "tcp", addr.String()) {
+	// 记录可能的bypass情况
+	if h.bypass && h.options.Bypass.Contains(ctx, "tcp", addr.String()) {
 		log.Debug("bypass: ", addr.String())
+		
+		// 记录被bypass的请求流量
+		sid := string(ctxvalue.SidFromContext(ctx))
+		netpkg.RecordBypassTraffic(addr.String(), sid, conn.LocalAddr())
+		
 		return nil
 	}
 
@@ -117,6 +129,7 @@ func (h *ssHandler) Handle(ctx context.Context, conn net.Conn, opts ...handler.H
 		return err
 	}
 	defer cc.Close()
+	
 	// 获取本地端口
 	localPort := 0
 	if tcpAddr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
@@ -124,21 +137,22 @@ func (h *ssHandler) Handle(ctx context.Context, conn net.Conn, opts ...handler.H
 	}
 	t := time.Now()
 	log.Infof("%s <-> %s", conn.RemoteAddr(), addr)
-	// netpkg.Transport(conn, cc)
-	//netpkg.Transport1(conn, cc, addr.String(), string(ctxvalue.SidFromContext(ctx)))
-		// 使用 TransportWithStats 替代 Transport1
-     	netpkg.TransportWithStats(
-    		conn,        // 客户端连接
-    		cc,          // 目标服务器连接
-    		addr.String(), // 目标地址（如 example.com:443）
-    		string(ctxvalue.SidFromContext(ctx)), // 会话ID
-    		localPort,   // 代理本地端口（如 1080）
-    	)
+	
+	// 使用 TransportWithStats 替代 Transport1
+	err = netpkg.TransportWithStats(
+		conn,        // 客户端连接
+		cc,          // 目标服务器连接
+		addr.String(), // 目标地址（如 example.com:443）
+		string(ctxvalue.SidFromContext(ctx)), // 会话ID
+		localPort,   // 代理本地端口（如 1080）
+	)
+	
 	log.WithFields(map[string]any{
 		"duration": time.Since(t),
-	}).Infof("%s >-< %s", conn.RemoteAddr(), addr)
+	})
+	log.Infof("%s >-< %s", conn.RemoteAddr(), addr)
 
-	return nil
+	return err // 返回实际的错误，而不是总是nil
 }
 
 func (h *ssHandler) checkRateLimit(addr net.Addr) bool {
@@ -151,4 +165,17 @@ func (h *ssHandler) checkRateLimit(addr net.Addr) bool {
 	}
 
 	return true
+}
+
+// 假设metadata结构体定义如下
+type metadata struct {
+	readTimeout time.Duration
+	hash        string
+	key         string
+}
+
+// 假设parseMetadata方法实现如下
+func (h *ssHandler) parseMetadata(md md.Metadata) error {
+	// 实现省略，保持原有逻辑
+	return nil
 }

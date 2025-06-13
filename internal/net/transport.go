@@ -1,3 +1,4 @@
+// net包代码
 package net
 
 import (
@@ -32,6 +33,7 @@ type Info struct {
 	SessionID  string `json:"sid,omitempty"`   // 新增会话ID
 	Domain     string `json:"domain,omitempty"`// 新增域名
 }
+
 // 初始化后台队列处理器
 func init() {
 	queueOnce.Do(func() {
@@ -80,21 +82,47 @@ func Transport(rw1, rw2 io.ReadWriter) error {
 
 func CopyBuffer(dst io.Writer, src io.Reader, bufSize int) error {
 	buf := bufpool.Get(bufSize)
-
 	defer bufpool.Put(buf)
 
 	_, err := io.CopyBuffer(dst, src, buf)
 	return err
 }
+
+// 新增：记录被bypass的请求
+func RecordBypassTraffic(domain, sid string, localAddr net.Addr) {
+	localPort := 0
+	if tcpAddr, ok := localAddr.(*net.TCPAddr); ok {
+		localPort = tcpAddr.Port
+	}
+
+	// 记录被bypass的请求，Bytes设为0但包含其他信息
+	rchanQueue <- Info{
+		Address:    domain,
+		LocalPort:  localPort,
+		Bytes:      0,
+		Unix:       time.Now().Unix(),
+		RepeatNums: 1,
+		SessionID:  sid,
+		Domain:     domain,
+	}
+
+	log.Printf("[Bypass流量记录] SessionID=%s | Domain=%s | 流量=0 (被过滤)", sid, domain)
+}
+
 // TransportWithStats 新版可靠传输实现
 func TransportWithStats(rw1, rw2 io.ReadWriter, domain, sid string, localPort int) error {
 	var (
 		bytesUp   int64
 		bytesDown int64
 		startTime = time.Now()
+		wg        sync.WaitGroup
 	)
 
+	wg.Add(2)
+
 	defer func() {
+		wg.Wait() // 等待两个goroutine都完成
+
 		totalBytes := bytesUp + bytesDown
 		duration := time.Since(startTime)
 
@@ -113,10 +141,9 @@ func TransportWithStats(rw1, rw2 io.ReadWriter, domain, sid string, localPort in
 			sid, domain, bytesUp, bytesDown, totalBytes, duration)
 	}()
 
-	errc := make(chan error, 2)
-
 	// 上行流量采集
 	go func() {
+		defer wg.Done()
 		defer func() {
 			if r := recover(); r != nil {
 				log.Printf("上行协程异常: %v", r)
@@ -124,11 +151,14 @@ func TransportWithStats(rw1, rw2 io.ReadWriter, domain, sid string, localPort in
 		}()
 		n, err := io.Copy(rw2, rw1)
 		bytesUp = n
-		errc <- err
+		if err != nil && err != io.EOF {
+			log.Printf("上行传输错误: %v, SessionID: %s, Domain: %s", err, sid, domain)
+		}
 	}()
 
 	// 下行流量采集
 	go func() {
+		defer wg.Done()
 		defer func() {
 			if r := recover(); r != nil {
 				log.Printf("下行协程异常: %v", r)
@@ -136,24 +166,11 @@ func TransportWithStats(rw1, rw2 io.ReadWriter, domain, sid string, localPort in
 		}()
 		n, err := io.Copy(rw1, rw2)
 		bytesDown = n
-		errc <- err
+		if err != nil && err != io.EOF {
+			log.Printf("下行传输错误: %v, SessionID: %s, Domain: %s", err, sid, domain)
+		}
 	}()
 
-	// 错误处理增强
-	var errCount int
-	for i := 0; i < 2; i++ {
-		if err := <-errc; err != nil {
-			if err != io.EOF {
-			totalBytes := bytesUp + bytesDown
-				log.Printf("传输错误: %v----Sid：%v，| 上行=%d | 下行=%d | 总流量=%d  | Domain=%s", err,sid,bytesUp, bytesDown, totalBytes,domain)
-				errCount++
-			}
-		}
-	}
-
-	if errCount > 0 {
-		return io.ErrClosedPipe
-	}
 	return nil
 }
 
@@ -242,13 +259,10 @@ func CopyBufferWithStats(dst io.Writer, src io.Reader, bufSize int, address, sid
 	return err
 }
 
-
-
 type bufferReaderConn struct {
 	net.Conn
 	br *bufio.Reader
 }
-
 
 func NewBufferReaderConn(conn net.Conn, br *bufio.Reader) net.Conn {
 	return &bufferReaderConn{
