@@ -7,19 +7,24 @@ import (
 	"log"
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
 const (
-	bufferSize    = 64 * 1024
-	maxQueueSize  = 100000      // 队列最大容量
-	retryInterval = 100 * time.Millisecond // 重试间隔
+	bufferSize        = 64 * 1024
+	maxQueueSize      = 100000      // 队列最大容量
+	retryInterval     = 100 * time.Millisecond // 重试间隔
+	flushInterval     = 500 * time.Millisecond // 批量上报间隔
+	maxBatchSize      = 100          // 批量上报最大条数
+	reportChannelSize = 10000        // 流量报告通道大小
 )
 
 var (
 	RChan       = make(chan Info, 5120)
 	rchanQueue  = make(chan Info, maxQueueSize)
 	queueOnce   sync.Once
+	reportChan  = make(chan Info, reportChannelSize) // 新增流量报告通道
 )
 
 // Info 增强版流量统计结构
@@ -32,10 +37,12 @@ type Info struct {
 	SessionID  string `json:"sid,omitempty"`   // 新增会话ID
 	Domain     string `json:"domain,omitempty"`// 新增域名
 }
+
 // 初始化后台队列处理器
 func init() {
 	queueOnce.Do(func() {
 		go processRChanQueue()
+		go batchReportStats() // 新增批量上报协程
 	})
 }
 
@@ -62,6 +69,50 @@ func processRChanQueue() {
 	}
 }
 
+// 批量上报流量统计
+func batchReportStats() {
+	batch := make([]Info, 0, maxBatchSize)
+	ticker := time.NewTicker(flushInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case info := <-reportChan:
+			batch = append(batch, info)
+			if len(batch) >= maxBatchSize {
+				// 达到批量大小，立即处理
+				flushBatch(batch)
+				batch = make([]Info, 0, maxBatchSize)
+			}
+		case <-ticker.C:
+			// 时间间隔到，处理当前批次
+			if len(batch) > 0 {
+				flushBatch(batch)
+				batch = make([]Info, 0, maxBatchSize)
+			}
+		}
+	}
+}
+
+// 处理一批统计信息
+func flushBatch(batch []Info) {
+	// 这里可以添加批量处理逻辑，例如合并相同会话的统计信息
+	for _, info := range batch {
+		rchanQueue <- info
+	}
+}
+
+// 立即上报流量统计，不经过批量处理
+func reportStatsImmediately(info Info) {
+	// 使用非阻塞方式发送，确保不阻塞网络操作
+	select {
+	case rchanQueue <- info:
+		// 发送成功
+	default:
+		log.Printf("紧急流量上报队列阻塞，丢弃统计信息: %v", info)
+	}
+}
+
 func Transport(rw1, rw2 io.ReadWriter) error {
 	errc := make(chan error, 1)
 	go func() {
@@ -80,12 +131,12 @@ func Transport(rw1, rw2 io.ReadWriter) error {
 
 func CopyBuffer(dst io.Writer, src io.Reader, bufSize int) error {
 	buf := bufpool.Get(bufSize)
-
 	defer bufpool.Put(buf)
 
 	_, err := io.CopyBuffer(dst, src, buf)
 	return err
 }
+
 // TransportWithStats 新版可靠传输实现
 func TransportWithStats(rw1, rw2 io.ReadWriter, domain, sid string, localPort int) error {
 	var (
@@ -94,48 +145,35 @@ func TransportWithStats(rw1, rw2 io.ReadWriter, domain, sid string, localPort in
 		startTime = time.Now()
 	)
 
-	defer func() {
-		totalBytes := bytesUp + bytesDown
-		duration := time.Since(startTime)
-
-		// 构建增强版统计信息
-		rchanQueue <- Info{
-			Address:    domain,
-			LocalPort:  localPort,
-			Bytes:      totalBytes,
-			Unix:       time.Now().Unix(),
-			RepeatNums: 1,
-			SessionID:  sid,
-			Domain:     domain,
-		}
-
-		log.Printf("[流量统计] SessionID=%s | Domain=%s | 上行=%d | 下行=%d | 总流量=%d | 耗时=%v",
-			sid, domain, bytesUp, bytesDown, totalBytes, duration)
-	}()
+	// 使用 WaitGroup 确保统计完成
+	var wg sync.WaitGroup
+	wg.Add(2)
 
 	errc := make(chan error, 2)
 
 	// 上行流量采集
 	go func() {
+		defer wg.Done()
 		defer func() {
 			if r := recover(); r != nil {
 				log.Printf("上行协程异常: %v", r)
 			}
 		}()
 		n, err := io.Copy(rw2, rw1)
-		bytesUp = n
+		atomic.AddInt64(&bytesUp, n)
 		errc <- err
 	}()
 
 	// 下行流量采集
 	go func() {
+		defer wg.Done()
 		defer func() {
 			if r := recover(); r != nil {
 				log.Printf("下行协程异常: %v", r)
 			}
 		}()
 		n, err := io.Copy(rw1, rw2)
-		bytesDown = n
+		atomic.AddInt64(&bytesDown, n)
 		errc <- err
 	}()
 
@@ -149,6 +187,35 @@ func TransportWithStats(rw1, rw2 io.ReadWriter, domain, sid string, localPort in
 			}
 		}
 	}
+
+	// 等待所有流量统计完成
+	wg.Wait()
+
+	// 构建统计信息
+	totalBytes := atomic.LoadInt64(&bytesUp) + atomic.LoadInt64(&bytesDown)
+	duration := time.Since(startTime)
+
+	info := Info{
+		Address:    domain,
+		LocalPort:  localPort,
+		Bytes:      totalBytes,
+		Unix:       time.Now().Unix(),
+		RepeatNums: 1,
+		SessionID:  sid,
+		Domain:     domain,
+	}
+
+	// 优先使用批量上报，确保不阻塞网络
+	select {
+	case reportChan <- info:
+		// 成功加入批量处理队列
+	default:
+		// 批量队列已满，立即上报
+		reportStatsImmediately(info)
+	}
+
+	log.Printf("[流量统计] SessionID=%s | Domain=%s | 上行=%d | 下行=%d | 总流量=%d | 耗时=%v",
+		sid, domain, atomic.LoadInt64(&bytesUp), atomic.LoadInt64(&bytesDown), totalBytes, duration)
 
 	if errCount > 0 {
 		return io.ErrClosedPipe
@@ -164,30 +231,23 @@ func Transport1(rw1, rw2 io.ReadWriter, address string, sid string) error {
 		startTime = time.Now()
 	)
 
-	defer func() {
-		total := bytesUp + bytesDown
-		rchanQueue <- Info{
-			Address:    address,
-			Bytes:      total,
-			Unix:       time.Now().Unix(),
-			RepeatNums: 1,
-			SessionID:  sid,
-		}
-		log.Printf("[流量统计] %s | 上行: %d | 下行: %d | 总流量: %d | 耗时=%v",
-			sid, bytesUp, bytesDown, total, time.Since(startTime))
-	}()
+	// 使用 WaitGroup 确保统计完成
+	var wg sync.WaitGroup
+	wg.Add(2)
 
 	errc := make(chan error, 2)
 
 	go func() {
+		defer wg.Done()
 		n, err := io.CopyBuffer(rw2, rw1, bufpool.Get(bufferSize))
-		bytesUp = n
+		atomic.AddInt64(&bytesUp, n)
 		errc <- err
 	}()
 
 	go func() {
+		defer wg.Done()
 		n, err := io.CopyBuffer(rw1, rw2, bufpool.Get(bufferSize))
-		bytesDown = n
+		atomic.AddInt64(&bytesDown, n)
 		errc <- err
 	}()
 
@@ -200,24 +260,60 @@ func Transport1(rw1, rw2 io.ReadWriter, address string, sid string) error {
 		}
 	}
 
+	// 等待所有流量统计完成
+	wg.Wait()
+
+	// 构建统计信息
+	total := atomic.LoadInt64(&bytesUp) + atomic.LoadInt64(&bytesDown)
+
+	info := Info{
+		Address:    address,
+		Bytes:      total,
+		Unix:       time.Now().Unix(),
+		RepeatNums: 1,
+		SessionID:  sid,
+	}
+
+	// 优先使用批量上报，确保不阻塞网络
+	select {
+	case reportChan <- info:
+		// 成功加入批量处理队列
+	default:
+		// 批量队列已满，立即上报
+		reportStatsImmediately(info)
+	}
+
+	log.Printf("[流量统计] %s | 上行: %d | 下行: %d | 总流量: %d | 耗时=%v",
+		sid, atomic.LoadInt64(&bytesUp), atomic.LoadInt64(&bytesDown), total, time.Since(startTime))
+
 	if errCount > 0 {
 		return io.ErrUnexpectedEOF
 	}
 	return nil
 }
 
-
 func CopyBuffer1(dst io.Writer, src io.Reader, bufSize int, address string, sid string) error {
 	buf := bufpool.Get(bufSize)
 	defer bufpool.Put(buf)
 	bytes, err := io.CopyBuffer(dst, src, buf)
 	log.Printf("[消耗流量：]--%s------%s------%s", address, bytes, sid)
-	RChan <- Info{
+
+	// 立即上报单次流量统计
+	info := Info{
 		Address:    address,
 		Bytes:      bytes,
 		Unix:       time.Now().Unix(),
 		RepeatNums: 1,
 	}
+
+	select {
+	case reportChan <- info:
+		// 成功加入批量处理队列
+	default:
+		// 批量队列已满，立即上报
+		reportStatsImmediately(info)
+	}
+
 	return err
 }
 
@@ -229,7 +325,8 @@ func CopyBufferWithStats(dst io.Writer, src io.Reader, bufSize int, address, sid
 	startTime := time.Now()
 	bytes, err := io.CopyBuffer(dst, src, buf)
 
-	rchanQueue <- Info{
+	// 构建统计信息
+	info := Info{
 		Address:    address,
 		Bytes:      bytes,
 		Unix:       time.Now().Unix(),
@@ -237,17 +334,23 @@ func CopyBufferWithStats(dst io.Writer, src io.Reader, bufSize int, address, sid
 		SessionID:  sid,
 	}
 
+	// 优先使用批量上报，确保不阻塞网络
+	select {
+	case reportChan <- info:
+		// 成功加入批量处理队列
+	default:
+		// 批量队列已满，立即上报
+		reportStatsImmediately(info)
+	}
+
 	log.Printf("[流量统计] %s | 传输量=%d | 耗时=%v", sid, bytes, time.Since(startTime))
 	return err
 }
-
-
 
 type bufferReaderConn struct {
 	net.Conn
 	br *bufio.Reader
 }
-
 
 func NewBufferReaderConn(conn net.Conn, br *bufio.Reader) net.Conn {
 	return &bufferReaderConn{
