@@ -146,7 +146,7 @@ func (h *httpHandler) handleRequest(ctx context.Context, conn net.Conn, req *htt
 	}
 
 	fields := map[string]any{
-		"dst": addr,
+		"dst": addr+"域名",
 	}
 	if u, _, _ := h.basicProxyAuth(req.Header.Get("Proxy-Authorization"), log); u != "" {
 		fields["user"] = u
@@ -256,19 +256,8 @@ func (h *httpHandler) handleRequest(ctx context.Context, conn net.Conn, req *htt
 		rw = stats_wrapper.WrapReadWriter(rw, pstats)
 	}
 
-	start = time.Now()
-
-	// 获取并记录域名信息
-	domain := req.Host
-	if domain == "" && req.URL != nil {
-		domain = req.URL.Host
-	}
-	if host, _, err := net.SplitHostPort(domain); err == nil {
-		domain = host
-	}
-
-	log.Infof("%s <-】】】】】【Transport】【【【【> %s (Domain: %s)", conn.RemoteAddr(), addr, domain)
-
+	start := time.Now()
+	log.Infof("%s <-> %s", conn.RemoteAddr(), addr)
 	netpkg.Transport(rw, cc)
 	log.WithFields(map[string]any{
 		"duration": time.Since(start),
