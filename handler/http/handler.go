@@ -84,7 +84,7 @@ func (h *httpHandler) Handle(ctx context.Context, conn net.Conn, opts ...handler
 	log := h.options.Logger.WithFields(map[string]any{
 		"remote": conn.RemoteAddr().String(),
 		"local":  conn.LocalAddr().String(),
-		"sidaaa": ctxvalue.SidFromContext(ctx),
+		"【HTTP请求===sid===】": ctxvalue.SidFromContext(ctx),
 	})
 	log.Infof("%s <> %s", conn.RemoteAddr(), conn.LocalAddr())
 	defer func() {
@@ -256,11 +256,24 @@ func (h *httpHandler) handleRequest(ctx context.Context, conn net.Conn, req *htt
 		rw = stats_wrapper.WrapReadWriter(rw, pstats)
 	}
 
-	start := time.Now()
-	log.Infof("%s <-> %s", conn.RemoteAddr(), addr)
+	// 移除重复的 start 变量声明
+	start := time.Now() // 删除这行，避免变量作用域问题
+
+	// 获取并记录域名信息
+	domain := req.Host
+	if domain == "" && req.URL != nil {
+		domain = req.URL.Host
+	}
+	if host, _, err := net.SplitHostPort(domain); err == nil {
+		domain = host
+	}
+
+	log.Infof("%s <-【Transport】> %s (Domain: %s)", conn.RemoteAddr(), addr, domain)
+
 	netpkg.Transport(rw, cc)
 	log.WithFields(map[string]any{
-		"duration": time.Since(start),
+		"duration": time.Since(start), // 使用外部作用域的 start 变量
+		"Domain": domain, // domain
 	}).Infof("%s >-< %s", conn.RemoteAddr(), addr)
 
 	return nil
