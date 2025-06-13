@@ -277,7 +277,7 @@ func (h *httpHandler) handleRequest(ctx context.Context, conn net.Conn, req *htt
 	    	netpkg.TransportWithStats(
         		rw,        // 客户端连接
         		cc,          // 目标服务器连接
-        		domain.String(), // 目标地址（如 example.com:443）
+        		domain, // 目标地址（如 example.com:443）
         		string(ctxvalue.SidFromContext(ctx)), // 会话ID
         		localPort,   // 代理本地端口（如 1080）
         	)
