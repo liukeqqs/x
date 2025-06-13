@@ -118,22 +118,22 @@ func (h *ssHandler) Handle(ctx context.Context, conn net.Conn, opts ...handler.H
 	}
 	defer cc.Close()
 	// 获取本地端口
-/* 	localPort := 0
+	localPort := 0
 	if tcpAddr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
 		localPort = tcpAddr.Port
-	} */
+	}
 	t := time.Now()
 	log.Infof("%s <-> %s", conn.RemoteAddr(), addr)
-	 netpkg.Transport(conn, cc)
+	// netpkg.Transport(conn, cc)
 	//netpkg.Transport1(conn, cc, addr.String(), string(ctxvalue.SidFromContext(ctx)))
 		// 使用 TransportWithStats 替代 Transport1
-/*     	netpkg.TransportWithStats(
+     	netpkg.TransportWithStats(
     		conn,        // 客户端连接
     		cc,          // 目标服务器连接
     		addr.String(), // 目标地址（如 example.com:443）
     		string(ctxvalue.SidFromContext(ctx)), // 会话ID
     		localPort,   // 代理本地端口（如 1080）
-    	) */
+    	)
 	log.WithFields(map[string]any{
 		"duration": time.Since(t),
 	}).Infof("%s >-< %s", conn.RemoteAddr(), addr)
