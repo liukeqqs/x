@@ -67,22 +67,22 @@ func (h *socks5Handler) handleConnect(ctx context.Context, conn net.Conn, networ
 		rw = stats_wrapper.WrapReadWriter(rw, pstats)
 	}
 	// 获取本地端口
-	localPort := 0
+/* 	localPort := 0
 	if tcpAddr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
 		localPort = tcpAddr.Port
-	}
+	} */
 	t := time.Now()
 	log.Infof("%s <-> %s", conn.RemoteAddr(), address)
-
+	netpkg.Transport(conn, cc)
 	//netpkg.Transport1(rw, cc, address, string(ctxvalue.SidFromContext(ctx)))
 		// 使用 TransportWithStats 替代 Transport1
-    	netpkg.TransportWithStats(
+/*     	netpkg.TransportWithStats(
     		rw,          // 客户端连接
     		cc,          // 目标服务器连接
     		address,     // 目标地址（如 example.com:443）
     		string(ctxvalue.SidFromContext(ctx)), // 会话ID
     		localPort,   // 代理本地端口（如 1080）
-    	)
+    	) */
 
 	log.WithFields(map[string]any{
 		"duration": time.Since(t),
