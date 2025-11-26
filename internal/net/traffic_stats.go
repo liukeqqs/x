@@ -2,6 +2,7 @@ package net
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -42,6 +43,8 @@ func FormatKey(str string) string {
 type TrafficStats struct {
 	// Redis客户端
 	redisClient *redis.Client
+	// Redis字符串加载器
+	redisLoader *redisStringLoader
 	// 本地缓存文件
 	cacheFile *os.File
 	// 缓存文件写入器
@@ -86,6 +89,12 @@ func NewTrafficStats(redisAddr, redisPassword string, redisDB int) *TrafficStats
 		WriteTimeout: redisTimeout,
 	})
 
+	// 创建Redis字符串加载器
+	redisLoader := &redisStringLoader{
+		client: redisClient,
+		key:    "gost", // 使用默认键名
+	}
+
 	// 测试Redis连接
 	ctx, cancel := context.WithTimeout(context.Background(), redisTimeout)
 	defer cancel()
@@ -96,6 +105,7 @@ func NewTrafficStats(redisAddr, redisPassword string, redisDB int) *TrafficStats
 	// 创建流量统计和上传模块
 	ts := &TrafficStats{
 		redisClient:     redisClient,
+		redisLoader:     redisLoader,
 		uploadQueue:     make(chan Info, 10000),
 		localCacheQueue: make(chan Info, 100000),
 	}
@@ -215,37 +225,20 @@ func (ts *TrafficStats) uploadBatch(batch []Info) {
 		return
 	}
 
-	// 创建Redis管道
-	pipe := ts.redisClient.Pipeline()
-	
-	// 将批次数据添加到管道
+	// 保持与原始实现一致的数据存储方式
 	for _, info := range batch {
 		key := FormatKey(info.Address)
-		data, err := json.Marshal(info)
-		if err != nil {
-			log.Printf("序列化流量统计数据失败: %v", err)
-			continue
+		// 使用GetValSet方法保持与原始实现一致的行为
+		if err := ts.redisLoader.GetValSet(ctx, key, info); err != nil {
+			log.Printf("上传流量统计数据失败: %v", err)
+			// 上传失败，写入本地缓存
+			ts.writeToLocalCache(info)
+		} else {
+			atomic.AddInt64(&ts.totalUploadedCount, 1)
 		}
-		
-		// 使用HSET存储，避免覆盖
-		pipe.HSet(context.Background(), key, info.SessionID, data)
-		// 设置过期时间 (30天)
-		pipe.Expire(context.Background(), key, 30*24*time.Hour)
 	}
 	
-	// 执行管道命令
-	ctx, cancel = context.WithTimeout(context.Background(), redisTimeout)
-	defer cancel()
-	if _, err := pipe.Exec(ctx); err != nil {
-		log.Printf("批量上传流量统计数据失败: %v", err)
-		// 上传失败，写入本地缓存
-		for _, info := range batch {
-			ts.writeToLocalCache(info)
-		}
-	} else {
-		atomic.AddInt64(&ts.totalUploadedCount, int64(len(batch)))
-		log.Printf("批量上传流量统计数据成功: %d条", len(batch))
-	}
+	log.Printf("批量上传流量统计数据成功: %d条", len(batch))
 }
 
 // writeToLocalCache 写入本地缓存
@@ -398,35 +391,22 @@ func (ts *TrafficStats) tryUploadBatch(batch []Info) bool {
 		return false
 	}
 
-	// 创建Redis管道
-	pipe := ts.redisClient.Pipeline()
-	
-	// 将批次数据添加到管道
+	// 保持与原始实现一致的数据存储方式
+	successCount := 0
 	for _, info := range batch {
 		key := FormatKey(info.Address)
-		data, err := json.Marshal(info)
-		if err != nil {
-			log.Printf("序列化流量统计数据失败: %v", err)
-			continue
+		// 使用GetValSet方法保持与原始实现一致的行为
+		if err := ts.redisLoader.GetValSet(ctx, key, info); err != nil {
+			log.Printf("从本地缓存上传流量统计数据失败: %v", err)
+			return false
+		} else {
+			successCount++
 		}
-		
-		// 使用HSET存储，避免覆盖
-		pipe.HSet(context.Background(), key, info.SessionID, data)
-		// 设置过期时间 (30天)
-		pipe.Expire(context.Background(), key, 30*24*time.Hour)
 	}
 	
-	// 执行管道命令
-	ctx, cancel = context.WithTimeout(context.Background(), redisTimeout)
-	defer cancel()
-	if _, err := pipe.Exec(ctx); err != nil {
-		log.Printf("从本地缓存批量上传流量统计数据失败: %v", err)
-		return false
-	} else {
-		atomic.AddInt64(&ts.totalUploadedCount, int64(len(batch)))
-		log.Printf("从本地缓存批量上传流量统计数据成功: %d条", len(batch))
-		return true
-	}
+	atomic.AddInt64(&ts.totalUploadedCount, int64(successCount))
+	log.Printf("从本地缓存批量上传流量统计数据成功: %d条", successCount)
+	return true
 }
 
 // monitor 监控协程
@@ -503,16 +483,61 @@ func (ts *TrafficStats) Close() error {
 	return nil
 }
 
+// redisStringLoader 用于与原始实现保持一致
+type redisStringLoader struct {
+	client *redis.Client
+	key    string
+}
 
+func (p *redisStringLoader) GetValSet(ctx context.Context, key string, object interface{}) (err error) {
+	var (
+		data      string
+		exist     = true
+		_info     = &Info{} // 使用本地的Info类型
+		paramByte []byte
+	)
+	defer func() {
+		if r := recover(); r != nil {
+			err = r.(error)
+		}
+	}()
+	data, err = p.client.Get(ctx, key).Result()
+	if err == redis.Nil {
+		exist = false
+		err = nil
+	}
 
+	if exist {
+		var info = object.(Info) // 使用本地的Info类型
 
+		err = json.Unmarshal([]byte(data), _info)
+		if err != nil {
+			return
+		}
+		info.Bytes += _info.Bytes
+		info.RepeatNums = _info.RepeatNums + 1
+		paramByte, err = json.Marshal(info)
+		if err != nil {
+			return
+		}
+		err = p.client.Set(ctx, key, string(paramByte), time.Hour*24*30).Err()
+		if err != nil {
+			return err
+		}
 
+		return
+	}
 
+	paramByte, err = json.Marshal(object.(Info)) // 使用本地的Info类型
+	if err != nil {
+		return
+	}
+	err = p.client.Set(ctx, key, string(paramByte), time.Hour*24*30).Err()
+	if err != nil {
+		return err
+	}
+	return nil
 
-
-
-
-
-
+}
 
 
