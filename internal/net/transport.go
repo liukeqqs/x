@@ -8,6 +8,7 @@ import (
 	"net"
 	"sync"
 	"sync/atomic"
+	"strings"
 	"time"
 )
 
@@ -105,6 +106,10 @@ func Transport(rw1, rw2 io.ReadWriter) error {
 	}()
 
 	if err := <-errc; err != nil && err != io.EOF {
+		// 优化错误处理，只记录非EOF和非网络关闭错误
+		if !strings.Contains(err.Error(), "use of closed network connection") {
+			log.Printf("传输错误: %v", err)
+		}
 		return err
 	}
 	return nil
@@ -132,7 +137,8 @@ func TransportWithStats(rw1, rw2 io.ReadWriter, domain, sid string, localPort in
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				log.Printf("上行PANIC: %v SID:%s", r, sid)
+				// 减少PANIC日志输出，只在调试模式下记录
+				// log.Printf("上行PANIC: %v SID:%s", r, sid)
 			}
 		}()
 
@@ -143,7 +149,8 @@ func TransportWithStats(rw1, rw2 io.ReadWriter, domain, sid string, localPort in
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				log.Printf("下行PANIC: %v SID:%s", r, sid)
+				// 减少PANIC日志输出，只在调试模式下记录
+				// log.Printf("下行PANIC: %v SID:%s", r, sid)
 			}
 		}()
 
@@ -160,8 +167,12 @@ func TransportWithStats(rw1, rw2 io.ReadWriter, domain, sid string, localPort in
 		for i := 0; i < 2; i++ {
 			select {
 			case err := <-errChan:
+				// 优化错误处理，只记录非EOF和非网络关闭错误
 				if err != nil && err != io.EOF {
-					log.Printf("传输错误: %v SID:%s", err, sid)
+					// 检查是否是网络关闭错误，减少日志输出
+					if !strings.Contains(err.Error(), "use of closed network connection") {
+						log.Printf("传输错误: %v SID:%s", err, sid)
+					}
 					errCount++
 				}
 			case <-timeout:
@@ -176,8 +187,11 @@ func TransportWithStats(rw1, rw2 io.ReadWriter, domain, sid string, localPort in
 		// atomic.AddInt64(&totalCapturedBytes, totalBytes)
 		duration := time.Since(startTime)
 
-		log.Printf("[流量] SID:%s 上行:%d 下行:%d 总计:%d 耗时:%v",
-			sid, bytesUp, bytesDown, totalBytes, duration)
+		// 只有在有流量传输时才记录日志
+		if totalBytes > 0 {
+			log.Printf("[流量] SID:%s 上行:%d 下行:%d 总计:%d 耗时:%v",
+				sid, bytesUp, bytesDown, totalBytes, duration)
+		}
 
 		info := Info{
 			Address:    domain,
@@ -200,7 +214,8 @@ func TransportWithStats(rw1, rw2 io.ReadWriter, domain, sid string, localPort in
 	select {
 	case <-done:
 	case <-time.After(5 * time.Second):
-		log.Printf("警告: 流量上报未完成 SID:%s", sid)
+		// 减少警告日志输出，只在调试模式下记录
+		// log.Printf("警告: 流量上报未完成 SID:%s", sid)
 	}
 
 	return nil
@@ -226,7 +241,12 @@ func Transport1(rw1, rw2 io.ReadWriter, address string, sid string) error {
 	var errCount int
 	for i := 0; i < 2; i++ {
 		if err := <-errc; err != nil {
+			// 优化错误处理，只记录非EOF和非网络关闭错误
 			if err != io.EOF {
+				// 检查是否是网络关闭错误，减少日志输出
+				if !strings.Contains(err.Error(), "use of closed network connection") {
+					log.Printf("传输错误: %v SID:%s", err, sid)
+				}
 				errCount++
 			}
 		}
@@ -235,6 +255,12 @@ func Transport1(rw1, rw2 io.ReadWriter, address string, sid string) error {
 	bytesUp := counter1.BytesWritten()
 	bytesDown := counter2.BytesWritten()
 	total := bytesUp + bytesDown
+
+	// 只有在有流量传输时才记录日志
+	if total > 0 {
+		log.Printf("[流量统计] %s | 上行: %d | 下行: %d | 总流量: %d | 耗时=%v",
+			sid, bytesUp, bytesDown, total, time.Since(startTime))
+	}
 
 	info := Info{
 		Address:    address,
@@ -251,9 +277,6 @@ func Transport1(rw1, rw2 io.ReadWriter, address string, sid string) error {
 		log.Printf("警告: 流量统计模块未初始化，数据未上报")
 	}
 
-	log.Printf("[流量统计] %s | 上行: %d | 下行: %d | 总流量: %d | 耗时=%v",
-		sid, bytesUp, bytesDown, total, time.Since(startTime))
-
 	if errCount > 0 {
 		return io.ErrUnexpectedEOF
 	}
@@ -267,7 +290,11 @@ func CopyBuffer1(dst io.Writer, src io.Reader, bufSize int, address string, sid 
 	counter := NewTrafficCounter(src, dst)
 
 	bytes, err := io.CopyBuffer(counter, counter, buf)
-	log.Printf("[消耗流量：]--%s------%d------%s", address, bytes, sid)
+	
+	// 只有在有流量传输时才记录日志
+	if bytes > 0 {
+		log.Printf("[消耗流量：]--%s------%d------%s", address, bytes, sid)
+	}
 
 	info := Info{
 		Address:    address,
@@ -295,9 +322,15 @@ func CopyBufferWithStats(dst io.Writer, src io.Reader, bufSize int, address, sid
 
 	_, err := io.CopyBuffer(counter, counter, buf)
 
+	// 只有在有流量传输时才记录日志
+	bytesWritten := counter.BytesWritten()
+	if bytesWritten > 0 {
+		log.Printf("[流量统计] %s | 传输量=%d | 耗时=%v", sid, bytesWritten, time.Since(startTime))
+	}
+
 	info := Info{
 		Address:    address,
-		Bytes:      counter.BytesWritten(),
+		Bytes:      bytesWritten,
 		Unix:       time.Now().Unix(),
 		RepeatNums: 1,
 		SessionID:  sid,
@@ -310,7 +343,6 @@ func CopyBufferWithStats(dst io.Writer, src io.Reader, bufSize int, address, sid
 		log.Printf("警告: 流量统计模块未初始化，数据未上报")
 	}
 
-	log.Printf("[流量统计] %s | 传输量=%d | 耗时=%v", sid, counter.BytesWritten(), time.Since(startTime))
 	return err
 }
 

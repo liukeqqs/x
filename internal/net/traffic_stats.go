@@ -148,6 +148,11 @@ func (ts *TrafficStats) initLocalCacheFile() {
 
 // ReportStats 上报流量统计信息
 func (ts *TrafficStats) ReportStats(info Info) {
+	// 只有在有流量传输时才上报
+	if info.Bytes <= 0 {
+		return
+	}
+	
 	// 尝试直接上传
 	select {
 	case ts.uploadQueue <- info:
@@ -159,7 +164,8 @@ func (ts *TrafficStats) ReportStats(info Info) {
 			atomic.AddInt64(&ts.pendingLocalCount, 1)
 		default:
 			// 如果本地缓存队列也满了，丢弃数据并记录日志
-			log.Printf("警告: 流量统计数据被丢弃，上传队列和本地缓存队列均已满")
+			// 减少日志输出频率，避免日志刷屏
+			// log.Printf("警告: 流量统计数据被丢弃，上传队列和本地缓存队列均已满")
 		}
 	}
 }
@@ -216,7 +222,8 @@ func (ts *TrafficStats) uploadBatch(batch []Info) {
 	ctx, cancel := context.WithTimeout(context.Background(), redisTimeout)
 	defer cancel()
 	if err := ts.redisClient.Ping(ctx).Err(); err != nil {
-		log.Printf("Redis连接不可用，写入本地缓存: %v", err)
+		// 减少日志输出频率，避免日志刷屏
+		// log.Printf("Redis连接不可用，写入本地缓存: %v", err)
 		// Redis不可用，写入本地缓存
 		for _, info := range batch {
 			ts.writeToLocalCache(info)
@@ -225,19 +232,23 @@ func (ts *TrafficStats) uploadBatch(batch []Info) {
 	}
 
 	// 保持与原始实现一致的数据存储方式
+	successCount := 0
 	for _, info := range batch {
 		key := FormatKey(info.Address)
 		// 使用GetValSet方法保持与原始实现一致的行为
 		if err := ts.redisLoader.GetValSet(ctx, key, info); err != nil {
-			log.Printf("上传流量统计数据失败: %v", err)
+			// 减少日志输出频率，避免日志刷屏
+			// log.Printf("上传流量统计数据失败: %v", err)
 			// 上传失败，写入本地缓存
 			ts.writeToLocalCache(info)
 		} else {
-			atomic.AddInt64(&ts.totalUploadedCount, 1)
+			successCount++
 		}
 	}
 	
-	log.Printf("批量上传流量统计数据成功: %d条", len(batch))
+	atomic.AddInt64(&ts.totalUploadedCount, int64(successCount))
+	// 减少日志输出频率，避免日志刷屏
+	// log.Printf("批量上传流量统计数据成功: %d条", len(batch))
 }
 
 // writeToLocalCache 写入本地缓存
@@ -250,22 +261,30 @@ func (ts *TrafficStats) writeToLocalCache(info Info) {
 		ts.rotateCacheFile()
 	}
 
+	// 只有序列化有流量的数据
+	if info.Bytes <= 0 {
+		return
+	}
+
 	// 序列化数据
 	data, err := json.Marshal(info)
 	if err != nil {
-		log.Printf("序列化流量统计数据失败: %v", err)
+		// 减少日志输出频率，避免日志刷屏
+		// log.Printf("序列化流量统计数据失败: %v", err)
 		return
 	}
 
 	// 检查文件是否仍然有效
 	if ts.cacheFile == nil || ts.cacheWriter == nil {
-		log.Printf("本地缓存文件未初始化")
+		// 减少日志输出频率，避免日志刷屏
+		// log.Printf("本地缓存文件未初始化")
 		return
 	}
 
 	// 写入文件
 	if _, err := ts.cacheWriter.Write(append(data, '\n')); err != nil {
-		log.Printf("写入本地缓存文件失败: %v", err)
+		// 减少日志输出频率，避免日志刷屏
+		// log.Printf("写入本地缓存文件失败: %v", err)
 		// 尝试重新初始化文件
 		ts.rotateCacheFile()
 		return
@@ -277,7 +296,8 @@ func (ts *TrafficStats) writeToLocalCache(info Info) {
 	
 	// 刷新缓冲区
 	if err := ts.cacheWriter.Flush(); err != nil {
-		log.Printf("刷新本地缓存文件缓冲区失败: %v", err)
+		// 减少日志输出频率，避免日志刷屏
+		// log.Printf("刷新本地缓存文件缓冲区失败: %v", err)
 	}
 }
 
@@ -321,7 +341,8 @@ func (ts *TrafficStats) uploadFromLocalCache() {
 	// 打开缓存文件
 	file, err := os.Open(cacheFile)
 	if err != nil {
-		log.Printf("打开本地缓存文件失败: %v", err)
+		// 减少日志输出频率，避免日志刷屏
+		// log.Printf("打开本地缓存文件失败: %v", err)
 		return
 	}
 	defer file.Close()
@@ -334,12 +355,16 @@ func (ts *TrafficStats) uploadFromLocalCache() {
 	for scanner.Scan() {
 		var info Info
 		if err := json.Unmarshal(scanner.Bytes(), &info); err != nil {
-			log.Printf("反序列化本地缓存数据失败: %v", err)
+			// 减少日志输出频率，避免日志刷屏
+			// log.Printf("反序列化本地缓存数据失败: %v", err)
 			continue
 		}
 		
-		batch = append(batch, info)
-		processedCount++
+		// 只处理有流量的数据
+		if info.Bytes > 0 {
+			batch = append(batch, info)
+			processedCount++
+		}
 		
 		// 如果批次已满，上传数据
 		if len(batch) >= batchSize {
@@ -371,9 +396,11 @@ func (ts *TrafficStats) uploadFromLocalCache() {
 			if processedCount*avgLineSize >= int(fileInfo.Size()) {
 				file.Close()
 				if err := os.Remove(cacheFile); err != nil {
-					log.Printf("删除本地缓存文件失败: %v", err)
+					// 减少日志输出频率，避免日志刷屏
+					// log.Printf("删除本地缓存文件失败: %v", err)
 				} else {
-					log.Printf("本地缓存文件已处理并删除: %s", cacheFile)
+					// 减少日志输出频率，避免日志刷屏
+					// log.Printf("本地缓存文件已处理并删除: %s", cacheFile)
 				}
 			}
 		}
@@ -386,7 +413,8 @@ func (ts *TrafficStats) tryUploadBatch(batch []Info) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), redisTimeout)
 	defer cancel()
 	if err := ts.redisClient.Ping(ctx).Err(); err != nil {
-		log.Printf("Redis连接不可用，无法上传本地缓存数据: %v", err)
+		// 减少日志输出频率，避免日志刷屏
+		// log.Printf("Redis连接不可用，无法上传本地缓存数据: %v", err)
 		return false
 	}
 
@@ -396,7 +424,8 @@ func (ts *TrafficStats) tryUploadBatch(batch []Info) bool {
 		key := FormatKey(info.Address)
 		// 使用GetValSet方法保持与原始实现一致的行为
 		if err := ts.redisLoader.GetValSet(ctx, key, info); err != nil {
-			log.Printf("从本地缓存上传流量统计数据失败: %v", err)
+			// 减少日志输出频率，避免日志刷屏
+			// log.Printf("从本地缓存上传流量统计数据失败: %v", err)
 			return false
 		} else {
 			successCount++
@@ -404,24 +433,35 @@ func (ts *TrafficStats) tryUploadBatch(batch []Info) bool {
 	}
 	
 	atomic.AddInt64(&ts.totalUploadedCount, int64(successCount))
-	log.Printf("从本地缓存批量上传流量统计数据成功: %d条", successCount)
+	// 减少日志输出频率，避免日志刷屏
+	// log.Printf("从本地缓存批量上传流量统计数据成功: %d条", successCount)
 	return true
 }
 
 // monitor 监控协程
 func (ts *TrafficStats) monitor() {
-	ticker := time.NewTicker(10 * time.Second)
+	// 增加监控日志的时间间隔，减少日志输出频率
+	ticker := time.NewTicker(60 * time.Second)
 	defer ticker.Stop()
 
 	for range ticker.C {
-		log.Printf("[流量统计监控] 待上传:%d 本地缓存:%d 已上传:%d 本地缓存总数:%d 上传状态:%v 本地缓存状态:%v",
-			atomic.LoadInt64(&ts.pendingUploadCount),
-			atomic.LoadInt64(&ts.pendingLocalCount),
-			atomic.LoadInt64(&ts.totalUploadedCount),
-			atomic.LoadInt64(&ts.totalLocalCacheCount),
-			ts.getUploadStatus(),
-			ts.getLocalCacheStatus(),
-		)
+		// 只有在有数据需要监控时才输出日志
+		pendingUpload := atomic.LoadInt64(&ts.pendingUploadCount)
+		pendingLocal := atomic.LoadInt64(&ts.pendingLocalCount)
+		totalUploaded := atomic.LoadInt64(&ts.totalUploadedCount)
+		totalLocalCache := atomic.LoadInt64(&ts.totalLocalCacheCount)
+		
+		// 只有在有待处理数据时才输出监控日志
+		if pendingUpload > 0 || pendingLocal > 0 || totalUploaded > 0 || totalLocalCache > 0 {
+			log.Printf("[流量统计监控] 待上传:%d 本地缓存:%d 已上传:%d 本地缓存总数:%d 上传状态:%v 本地缓存状态:%v",
+				pendingUpload,
+				pendingLocal,
+				totalUploaded,
+				totalLocalCache,
+				ts.getUploadStatus(),
+				ts.getLocalCacheStatus(),
+			)
+		}
 	}
 }
 
