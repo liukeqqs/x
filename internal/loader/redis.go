@@ -12,27 +12,13 @@ import (
 	"time"
 )
 
-var (
-	client *redis.Client
-)
-
 const (
 	DefaultRedisKey = "gost"
+	// Redis连接池配置
+	redisPoolSize = 20
+	// Redis超时时间
+	redisTimeout = 5 * time.Second
 )
-
-//func NewClient() {
-//	client = redis.NewClient(&redis.Options{
-//		Addr:     "127.0.0.1:6379",
-//		Password: "",
-//		DB:       0,
-//	})
-//
-//	_, err := client.Ping().Result()
-//	if err != nil {
-//		panic(err)
-//	}
-//	return
-//}
 
 type redisLoaderOptions struct {
 	db       int
@@ -81,9 +67,14 @@ func RedisStringLoader(addr string, opts ...RedisLoaderOption) Loader {
 
 	return &redisStringLoader{
 		client: redis.NewClient(&redis.Options{
-			Addr:     addr,
-			Password: options.password,
-			DB:       options.db,
+			Addr:         addr,
+			Password:     options.password,
+			DB:           options.db,
+			PoolSize:     redisPoolSize,
+			MinIdleConns: 5,
+			DialTimeout:  redisTimeout,
+			ReadTimeout:  redisTimeout,
+			WriteTimeout: redisTimeout,
 		}),
 		key: key,
 	}
@@ -180,9 +171,14 @@ func RedisSetLoader(addr string, opts ...RedisLoaderOption) Loader {
 
 	return &redisSetLoader{
 		client: redis.NewClient(&redis.Options{
-			Addr:     addr,
-			Password: options.password,
-			DB:       options.db,
+			Addr:         addr,
+			Password:     options.password,
+			DB:           options.db,
+			PoolSize:     redisPoolSize,
+			MinIdleConns: 5,
+			DialTimeout:  redisTimeout,
+			ReadTimeout:  redisTimeout,
+			WriteTimeout: redisTimeout,
 		}),
 		key: key,
 	}
@@ -232,9 +228,14 @@ func RedisListLoader(addr string, opts ...RedisLoaderOption) Loader {
 
 	return &redisListLoader{
 		client: redis.NewClient(&redis.Options{
-			Addr:     addr,
-			Password: options.password,
-			DB:       options.db,
+			Addr:         addr,
+			Password:     options.password,
+			DB:           options.db,
+			PoolSize:     redisPoolSize,
+			MinIdleConns: 5,
+			DialTimeout:  redisTimeout,
+			ReadTimeout:  redisTimeout,
+			WriteTimeout: redisTimeout,
 		}),
 		key: key,
 	}
@@ -284,9 +285,14 @@ func RedisHashLoader(addr string, opts ...RedisLoaderOption) Loader {
 
 	return &redisHashLoader{
 		client: redis.NewClient(&redis.Options{
-			Addr:     addr,
-			Password: options.password,
-			DB:       options.db,
+			Addr:         addr,
+			Password:     options.password,
+			DB:           options.db,
+			PoolSize:     redisPoolSize,
+			MinIdleConns: 5,
+			DialTimeout:  redisTimeout,
+			ReadTimeout:  redisTimeout,
+			WriteTimeout: redisTimeout,
 		}),
 		key: key,
 	}

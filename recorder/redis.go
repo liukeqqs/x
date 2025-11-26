@@ -7,6 +7,13 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
+const (
+	// Redis连接池配置
+	redisPoolSize = 20
+	// Redis超时时间
+	redisTimeout = 5 * time.Second
+)
+
 type redisRecorderOptions struct {
 	db       int
 	password string
@@ -46,9 +53,14 @@ func RedisSetRecorder(addr string, opts ...RedisRecorderOption) recorder.Recorde
 
 	return &redisSetRecorder{
 		client: redis.NewClient(&redis.Options{
-			Addr:     addr,
-			Password: options.password,
-			DB:       options.db,
+			Addr:         addr,
+			Password:     options.password,
+			DB:           options.db,
+			PoolSize:     redisPoolSize,
+			MinIdleConns: 5,
+			DialTimeout:  redisTimeout,
+			ReadTimeout:  redisTimeout,
+			WriteTimeout: redisTimeout,
 		}),
 		key: options.key,
 	}
@@ -80,9 +92,14 @@ func RedisListRecorder(addr string, opts ...RedisRecorderOption) recorder.Record
 
 	return &redisListRecorder{
 		client: redis.NewClient(&redis.Options{
-			Addr:     addr,
-			Password: options.password,
-			DB:       options.db,
+			Addr:         addr,
+			Password:     options.password,
+			DB:           options.db,
+			PoolSize:     redisPoolSize,
+			MinIdleConns: 5,
+			DialTimeout:  redisTimeout,
+			ReadTimeout:  redisTimeout,
+			WriteTimeout: redisTimeout,
 		}),
 		key: options.key,
 	}
@@ -114,9 +131,14 @@ func RedisSortedSetRecorder(addr string, opts ...RedisRecorderOption) recorder.R
 
 	return &redisSortedSetRecorder{
 		client: redis.NewClient(&redis.Options{
-			Addr:     addr,
-			Password: options.password,
-			DB:       options.db,
+			Addr:         addr,
+			Password:     options.password,
+			DB:           options.db,
+			PoolSize:     redisPoolSize,
+			MinIdleConns: 5,
+			DialTimeout:  redisTimeout,
+			ReadTimeout:  redisTimeout,
+			WriteTimeout: redisTimeout,
 		}),
 		key: options.key,
 	}
